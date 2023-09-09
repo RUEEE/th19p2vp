@@ -25,7 +25,7 @@ void LogError(std::string msg)
 
 void LogInfo(std::string msg)
 {
-    Log("INF ", msg);
+    Log("INF", msg);
 }
 
 int CalTimePeriod(LARGE_INTEGER start, LARGE_INTEGER end)

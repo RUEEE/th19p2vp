@@ -21,19 +21,15 @@
 #include <unordered_map>
 #include <format>
 #include <fstream>
+#include "States.h"
 
-#define VALUED(x) (*(DWORD*)(x))
-#define VALUEF(x) (*(float*)(x))
 
 extern P2PConnection g_connection;
-extern int g_cur_frame;
-extern int g_real_frame;
-extern int g_seed_numA;
-extern int g_seed_numB;
 extern std::string g_log;
+extern int g_ui_frame;
 extern bool g_is_log;
 bool g_is_focus_ui;
-
+extern bool g_is_synced;
 struct UI_State
 {
     struct {
@@ -41,6 +37,7 @@ struct UI_State
         int frame;
     }testcnt;
 }g_UI_State;
+
 
 
 void SetUI(IDirect3DDevice9* device)
@@ -57,16 +54,20 @@ void SetUI(IDirect3DDevice9* device)
     if (g_connection.connect_state == ConnectState::No_Connection)
     {
         ImGui::Begin("No Connection###wind",0,ImGuiWindowFlags_::ImGuiWindowFlags_NoMove | ImGuiWindowFlags_::ImGuiWindowFlags_NoResize);
-    }else if (g_connection.connect_state == ConnectState::Game_Start){
-        ImGui::Begin("PVP###wind", 0, ImGuiWindowFlags_::ImGuiWindowFlags_NoMove | ImGuiWindowFlags_::ImGuiWindowFlags_NoResize);
+    }else if (g_connection.connect_state == ConnectState::Connected){
+        if(g_is_synced)
+            ImGui::Begin("PVP###wind", 0, ImGuiWindowFlags_::ImGuiWindowFlags_NoMove | ImGuiWindowFlags_::ImGuiWindowFlags_NoResize);
+        else
+            ImGui::Begin("desync probably###wind", 0, ImGuiWindowFlags_::ImGuiWindowFlags_NoMove | ImGuiWindowFlags_::ImGuiWindowFlags_NoResize);
     }else{
         ImGui::Begin("Waiting for P2###wind", 0, ImGuiWindowFlags_::ImGuiWindowFlags_NoMove | ImGuiWindowFlags_::ImGuiWindowFlags_NoResize);
     }
     g_is_focus_ui = ImGui::IsWindowFocused();
     is_collapse=ImGui::IsWindowCollapsed();
 
-    
-    ImGui::LabelText(" ", "%d; %d+%d+(%d,%d)", g_cur_frame, g_real_frame, g_seed_numA, g_seed_numB);
+    SeedType seed[4];
+    CopyFromOriginalSeeds(seed);
+    ImGui::LabelText(" ", "%d; %d,%d,%d,%d", g_ui_frame,seed[0],seed[1],seed[2],seed[3]);
 
     ImGui::SetNextItemWidth(100.0f);
     ImGui::InputText(" Host IP ", g_connection.address, sizeof(g_connection.address));
@@ -89,23 +90,22 @@ void SetUI(IDirect3DDevice9* device)
     ImGui::SetColumnWidth(1, 150.0f);
 
   
-    ImGui::NextColumn();
     if (ImGui::Button("start as Host")) {
-        g_connection.StartConnect(true, false);
+        g_connection.SetUpConnect_Host();
         LogInfo("start as Host");
         if(!g_is_log)
             is_collapse = false;
     }
     ImGui::NextColumn();
     if (ImGui::Button("start as Guest")){
-        g_connection.StartConnect(false, false);
+        g_connection.SetUpConnect_Guest();
         LogInfo("start as Guest");
         if (!g_is_log)
             is_collapse = false;
     }
+    
     ImGui::NextColumn();
     if (ImGui::Button("stop connection")) {
-        g_connection.SendEndConnect();
         g_connection.EndConnect();
     }
 
