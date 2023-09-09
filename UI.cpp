@@ -42,64 +42,6 @@ struct UI_State
     }testcnt;
 }g_UI_State;
 
-void TestConnect_Host_UI(bool* p_open)
-{
-    if (!*p_open)
-        return;
-    auto& testcnt = g_UI_State.testcnt;
-    if (testcnt.frame >= 0)
-    {
-        testcnt.frame++;
-        Pack rcvPack;
-        if (g_connection.RcvPack(&rcvPack) > 0 && rcvPack.type == Pack_Type::Test_Pack)
-        {
-            testcnt.log += std::format("successfully received pack {}\n",rcvPack.index);
-            g_connection.SendPack(rcvPack);
-        }else if (testcnt.frame % 60 == 1){
-            testcnt.log += std::format("waiting...\n");
-        }
-    }
-    ImGui::SetNextWindowSizeConstraints(ImVec2(340.0f, 100.0f), ImVec2(340.0f, 640.0f));
-    ImGui::SetNextWindowPos(ImVec2(400.0f, 0.0f));
-    ImGui::Begin("TestCnt", p_open, ImGuiWindowFlags_::ImGuiWindowFlags_NoMove);
-    ImGui::TextWrapped(testcnt.log.c_str());
-    ImGui::End();
-}
-void TestConnect_Guest_UI(bool* p_open)
-{
-    if (!*p_open)
-        return;
-    auto& testcnt = g_UI_State.testcnt;
-    if (testcnt.frame >= 0)
-    {
-        testcnt.frame++;
-        LARGE_INTEGER cur_time;
-        QueryPerformanceCounter(&cur_time);
-        if (testcnt.frame % 60 == 1)
-        {
-            Pack testPack;
-            testPack.type = Pack_Type::Test_Pack;
-            testPack.test_pack.time_stamp = cur_time;
-            g_connection.SendPack(testPack);
-        }
-        Pack rcvPack;
-        if (g_connection.RcvPack(&rcvPack) > 0 && rcvPack.type == Pack_Type::Test_Pack)
-        {
-            testcnt.log += std::format("successfully connected, delay:{}ms\n", CalTimePeriod(rcvPack.test_pack.time_stamp, cur_time));
-            testcnt.frame = testcnt.frame % 60;
-        }
-        if (testcnt.frame >= 120)
-        {
-            testcnt.log += std::format("time out\n");
-            testcnt.frame = 0;
-        }
-    }
-    ImGui::SetNextWindowSizeConstraints(ImVec2(340.0f, 100.0f), ImVec2(340.0f, 640.0f));
-    ImGui::SetNextWindowPos(ImVec2(400.0f, 0.0f));
-    ImGui::Begin("TestCnt", p_open, ImGuiWindowFlags_::ImGuiWindowFlags_NoMove);
-    ImGui::TextWrapped(testcnt.log.c_str());
-    ImGui::End();
-}
 
 void SetUI(IDirect3DDevice9* device)
 {
@@ -115,7 +57,7 @@ void SetUI(IDirect3DDevice9* device)
     if (g_connection.connect_state == ConnectState::No_Connection)
     {
         ImGui::Begin("No Connection###wind",0,ImGuiWindowFlags_::ImGuiWindowFlags_NoMove | ImGuiWindowFlags_::ImGuiWindowFlags_NoResize);
-    }else if (g_connection.connect_state == ConnectState::All_Started){
+    }else if (g_connection.connect_state == ConnectState::Game_Start){
         ImGui::Begin("PVP###wind", 0, ImGuiWindowFlags_::ImGuiWindowFlags_NoMove | ImGuiWindowFlags_::ImGuiWindowFlags_NoResize);
     }else{
         ImGui::Begin("Waiting for P2###wind", 0, ImGuiWindowFlags_::ImGuiWindowFlags_NoMove | ImGuiWindowFlags_::ImGuiWindowFlags_NoResize);
@@ -124,7 +66,7 @@ void SetUI(IDirect3DDevice9* device)
     is_collapse=ImGui::IsWindowCollapsed();
 
     
-    ImGui::LabelText(" ", "%d; %d+%d+(%d,%d)", g_cur_frame, g_connection.seednum0, g_real_frame, g_seed_numA, g_seed_numB);
+    ImGui::LabelText(" ", "%d; %d+%d+(%d,%d)", g_cur_frame, g_real_frame, g_seed_numA, g_seed_numB);
 
     ImGui::SetNextItemWidth(100.0f);
     ImGui::InputText(" Host IP ", g_connection.address, sizeof(g_connection.address));
@@ -146,25 +88,7 @@ void SetUI(IDirect3DDevice9* device)
     ImGui::SetColumnWidth(0, 150.0f);
     ImGui::SetColumnWidth(1, 150.0f);
 
-    if (ImGui::Button("test connect(Host)"))
-    {
-        g_UI_State.testcnt.log = "";
-        g_UI_State.testcnt.frame = 0;
-        is_testHost_open = true;
-        LogInfo("test cnt(s)");
-        g_connection.StartConnect(true,true);
-    }
-    TestConnect_Host_UI(&is_testHost_open);
-    ImGui::NextColumn();
-    if (ImGui::Button("test connect(Guest)"))
-    {
-        g_UI_State.testcnt.log = "";
-        g_UI_State.testcnt.frame = 0;
-        is_testGuest_open = true;
-        LogInfo("test cnt(h)");
-        g_connection.StartConnect(false,true);
-    }
-    TestConnect_Guest_UI(&is_testGuest_open);
+  
     ImGui::NextColumn();
     if (ImGui::Button("start as Host")) {
         g_connection.StartConnect(true, false);
