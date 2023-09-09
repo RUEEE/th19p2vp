@@ -11,23 +11,32 @@
 
 enum StatePack_State
 {
-	Host_State,No_State
+	Host_State,No_State,WAIT_STATE
 };
 
 struct Data_StatePack
 {
 	SeedType seednum[4];
 	DWORD cfg_flag[3];
-	int delay_compensation;
+	union
+	{
+		int delay_compensation;
+		int wait_frame;
+	};
 	StatePack_State state;
 	Data_StatePack(StatePack_State state);
 	Data_StatePack();
 };
 
+struct Data_NAK_KeyState
+{
+	int frame;
+	Data_NAK_KeyState(int f = 0) :frame(f) {};
+};
 
 struct Data_KeyState
 {
-	static constexpr int c_PackKeyStateNum = 1;
+	static constexpr int c_PackKeyStateNum = 8;
 	KeyState key_state[c_PackKeyStateNum];
 	//KeyState key_state;
 };
@@ -37,7 +46,7 @@ struct Pack
 	int64_t index;
 	LARGE_INTEGER time_stamp;
 	LARGE_INTEGER time_stamp_echo;
-	std::variant <Data_KeyState, Data_StatePack> data;
+	std::variant <Data_KeyState, Data_StatePack, Data_NAK_KeyState> data;
 };
 
 enum ConnectState
@@ -50,7 +59,7 @@ struct P2PConnection
 	static constexpr int max_frame_wait = 180;
 
 	void SetSocketBlocking(SOCKET sock);
-	SOCKET GetCurrentSocket();
+	SOCKET GetCurrentTCPSocket();
 
 
 	ConnectState connect_state;
@@ -77,6 +86,8 @@ struct P2PConnection
 	SOCKET socket_guest;
 	SOCKET socket_host;
 
+	SOCKET socket_udp;//to send frame states
+
 	int delay_compensation;
 	P2PConnection();
 
@@ -92,10 +103,17 @@ struct P2PConnection
 	static bool WSAStartUp();
 
 	Pack CreateEmptyPack();
-	int RcvPack();
+	int RcvPack(SOCKET sock,bool is_tcp);
+	int RcvTCPPack();
+	int RcvUDPPack();
 	
-	int SendPack(Data_KeyState data);
-	int SendPack(Data_StatePack data);
+	int SendPack(SOCKET sock, Data_KeyState data, bool is_tcp);
+	int SendUDPPack(Data_KeyState data);
+	int SendTCPPack(Data_KeyState data);
+
+	int SendTCP_UDP_Pack(Data_NAK_KeyState data);
+
+	int SendTCPPack(Data_StatePack data);
 };
 
 

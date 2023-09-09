@@ -49,7 +49,7 @@ void Delay(int millisec)
         int ms = ((end.QuadPart - start.QuadPart) * 1000 / (g_time_freq.QuadPart));
         if (ms >= millisec)
             break;
-        if (millisec - ms >= 15)
+        if (millisec - ms >= 25)
             Sleep(5);
     }
     QueryPerformanceCounter(&g_cur_time);

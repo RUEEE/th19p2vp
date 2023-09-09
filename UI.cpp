@@ -117,7 +117,9 @@ void SetUI(IDirect3DDevice9* device)
         AllocConsole();
 #pragma warning(push)
 #pragma warning(disable:4996)
+#pragma warning(disable:6031)
         freopen("CONOUT$", "w", stdout);
+        std::ios::sync_with_stdio(0);
 #pragma warning(pop)
     }
     ImGui::SameLine();
