@@ -206,21 +206,45 @@ DWORD GetCurrentReceivedKey()
         return g_keystate_rcved[g_ui_frame].state;
 
     LogError(std::format("fail to get cur rcv key : {}",g_ui_frame));
-    int i = 0;
-
+    Delay(1);
     HandlePacks();
-    while (!g_keystate_rcved.contains(g_ui_frame)) {
+    if (!g_keystate_rcved.contains(g_ui_frame)){
+        LogInfo("no cur key");
+        g_connection.SendTCP_UDP_Pack(Data_NAK_KeyState(g_ui_frame));
+    }
+
+    bool is_ahead = true;
+    for (int i = 0; i < g_connection.delay_compensation; i++){
+        if (g_keystate_rcved.contains(g_ui_frame + 1)){
+            is_ahead = false;
+        }
+    }
+    LARGE_INTEGER time_begin;
+    QueryPerformanceCounter(&time_begin);
+    for(int i=0;i<100000;i++){
+        HandlePacks();
+        if (g_keystate_rcved.contains(g_ui_frame))
+            break;
         if (g_connection.connect_state == ConnectState::No_Connection)
             return 0;
-        Delay(16);
-        HandlePacks();
-        if (i > g_connection.delay_compensation + P2PConnection::max_frame_wait){
+        LARGE_INTEGER time_cur;
+        QueryPerformanceCounter(&time_cur);
+        if (CalTimePeriod(time_begin,time_cur)>16*(g_connection.delay_compensation+P2PConnection::max_frame_wait)) {
             LogError("fail to Connect");
             g_connection.EndConnect();
             return 0;
         }
-        i++;
     }
+    if (is_ahead){
+        LogInfo(std::format("ahead delay {} ms", 8 * g_connection.delay_compensation));
+        Delay(8 * g_connection.delay_compensation);
+    }
+    // static int time_no_key = 0;
+    // if ((time_no_key++) >=3){
+    //     LogInfo("delay 0.3 frame");
+    //     Delay(5);
+    //     time_no_key = 0;
+    // }
     return g_keystate_rcved[g_ui_frame].state;
 }
 
