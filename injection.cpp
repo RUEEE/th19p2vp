@@ -359,7 +359,7 @@ void unHook()
     }
 }
 
-
+#include "States.h"
 //#define msg(x)  MessageBoxA(NULL, x, x, MB_OK);
 #define msg(x)
 void InjectAll()
@@ -367,18 +367,22 @@ void InjectAll()
      HookCall((LPVOID)0x004ABAB2, MyGetKeyState);
      InitUtils();
      P2PConnection::WSAStartUp();
-     
-     Address<BYTE>(0x402C00).SetValue(0xE9);
-     Address<DWORD>(0x402C01).SetValue((DWORD)(GetRng)-0x402C00-5);
-     
-     Address<BYTE>(0x402340).SetValue(0xE9);
-     Address<DWORD>(0x402341).SetValue((DWORD)(GetRng2)-0x402340-5);
+     InjectSeedStates();
+
+     Hook((LPVOID)0x4BF280, 6, ConnectLoop_L);
+
+     // Address<BYTE>(0x402C00).SetValue(0xE9);
+     // Address<DWORD>(0x402C01).SetValue((DWORD)(GetRng)-0x402C00-5);
+     // 
+     // Address<BYTE>(0x402340).SetValue(0xE9);
+     // Address<DWORD>(0x402341).SetValue((DWORD)(GetRng2)-0x402340-5);
      
      //Hook((LPVOID)0x00505688, 7, SetLife);
-     Hook((LPVOID)0x0053239F, 7, SetPlayer);
+     //Hook((LPVOID)0x0053239F, 7, SetPlayer);
      //Hook((LPVOID)0x00501F9D, 5, SetLife2);
      //Hook((LPVOID)0x0042A1F7, 6, PlayerMove);
-     Hook((LPVOID)0x00530EE3, 6, PlayerState);
+
+
 
     //default menu
 

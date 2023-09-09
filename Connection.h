@@ -11,27 +11,25 @@
 
 enum StatePack_State
 {
-	Guest_Prepared,Guest_Received,Host_Received,End_Game,No_State
+	Host_State,No_State
 };
 
 struct Data_StatePack
 {
-	int seednum0;
-	int cfg_flag[3];
+	SeedType seednum[4];
+	DWORD cfg_flag[3];
+	int delay_compensation;
 	StatePack_State state;
 	Data_StatePack(StatePack_State state);
 	Data_StatePack();
 };
 
-struct Data_NAK_Pack
-{
-	int frame;
-};
 
 struct Data_KeyState
 {
-	static constexpr int c_PackKeyStateNum = 20;
+	static constexpr int c_PackKeyStateNum = 1;
 	KeyState key_state[c_PackKeyStateNum];
+	//KeyState key_state;
 };
 
 struct Pack
@@ -39,55 +37,69 @@ struct Pack
 	int64_t index;
 	LARGE_INTEGER time_stamp;
 	LARGE_INTEGER time_stamp_echo;
-	std::variant <Data_KeyState, Data_StatePack, Data_NAK_Pack> data;
+	std::variant <Data_KeyState, Data_StatePack> data;
 };
 
 enum ConnectState
 {
-	No_Connection,Host_Prepared,Guest_Prepared,Host_Received, Connected
+	No_Connection,Host_Listening,Guest_Requesting, Connected
 };
 
 struct P2PConnection
 {
-	std::queue<Pack> packs_rcved;
+	static constexpr int max_frame_wait = 180;
+
+	void SetSocketBlocking(SOCKET sock);
+	SOCKET GetCurrentSocket();
+
+
 	ConnectState connect_state;
 	int64_t pack_index;
-	bool is_Host;
+	bool is_host;
 	bool is_ipv6;
 
 	char address[128];
 	int port_Host;
 	int port_Guest;
 	bool is_blocking;
+
+	std::queue<Pack> packs_rcved;
 	union{
-		sockaddr_in6 addr_self;
+		sockaddr_in6 addr_self6;
 		sockaddr_in addr_self4;
 	};
 	union
 	{
-		sockaddr_in6 addr_other;
+		sockaddr_in6 addr_other6;
 		sockaddr_in addr_other4;
 	};
-	SOCKET udp_socket;
+	SOCKET socket_listen_host;
+	SOCKET socket_guest;
+	SOCKET socket_host;
 
 	int delay_compensation;
 	P2PConnection();
-	bool SetUpConnect(bool isHost);
+
+	bool SetUpConnect_Guest();
+	bool SetUpConnect_Host();
+
+	bool Host_Listening();
+	bool Guest_Request();
+
 	void EndConnect();
+
+	
 	static bool WSAStartUp();
 
 	Pack CreateEmptyPack();
 	int RcvPack();
 	
 	int SendPack(Data_KeyState data);
-	int SendPack(Data_NAK_Pack data);
 	int SendPack(Data_StatePack data);
-	void SendEndConnect();
-
-	void SendGuestPrepared();
-	void SendHostReceived();
-	void SendGuestReceived();
-
 };
 
+
+void ConnectLoop();
+void HandlePacks();
+void __stdcall ConnectLoop_L();
 

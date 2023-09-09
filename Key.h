@@ -1,16 +1,17 @@
 #pragma once
+#include <windows.h>
+#include "States.h"
 
 struct KeyState
 {
 	int frame;
-	int state;
+	DWORD state;
+	SeedType seednum[4];
 };
 
 int __fastcall MyGetKeyState(DWORD thiz);
-DWORD __fastcall GetRng(DWORD thiz);
-SHORT __fastcall GetRng2(DWORD thiz);
-void SetPlayer();
-void SetLife2();
-void EnterGame();
-void InitGameValue();
-void __fastcall PlayerState(DWORD ecx);
+// void SetPlayer();
+// void SetLife2();
+// void EnterGame();
+// void InitGameValue();
+// void __fastcall PlayerState(DWORD ecx);

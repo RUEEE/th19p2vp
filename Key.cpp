@@ -9,19 +9,21 @@
 #include <unordered_map>
 #include <format>
 #include <random>
+#include "States.h"
 
 #undef max
 #undef min
 extern P2PConnection g_connection;
 extern bool g_is_focus_ui;
+extern int g_ui_frame;
+
 extern LARGE_INTEGER g_cur_time;
+
 std::unordered_map<int, KeyState> g_keystate_self;
 std::unordered_map<int, KeyState> g_keystate_rcved;
-int g_cur_frame;
-int g_real_frame;
-int g_seed_numA;
-int g_seed_numB;
 
+
+/*
 bool IsInGame()
 {
     return *(DWORD*)(0x005AE474) && g_cur_frame <= 2 * g_connection.delay_compensation && g_real_frame;
@@ -32,12 +34,6 @@ bool IsLoading()
     return *(DWORD*)(0x005AE474) && (g_real_frame==0);
 }
 
-void SetSeed(DWORD seed)
-{
-    *(DWORD*)0x5AE410 = seed - 1;
-    *(DWORD*)0x5AE420 = seed;
-    *(DWORD*)0x5AE430 = seed + 1;
-}
 
 void InitGameValue()
 {
@@ -59,9 +55,10 @@ void InitGameValue()
 void EnterGame()
 {
     InitGameValue();
-    g_connection.SendHostPrepared();
 }
+*/
 
+/*
 DWORD __fastcall Original_GetRng(DWORD* thiz)
 {
     unsigned int v2; // edi
@@ -78,6 +75,36 @@ std::default_random_engine g_random_engineB(0);
 std::default_random_engine g_random_engineC(0);
 std::uniform_int_distribution<unsigned int> g_uint_device(0,4294967295);
 
+
+DWORD __fastcall GetRng(DWORD thiz)
+{
+    // *(DWORD*)(thiz + 4) += 2;
+    // LogInfo(std::format("RNGD for {};{}+{}+({},{})",thiz,        g_connection.seednum0, g_real_frame, g_seed_numA, g_seed_numB));
+    // if (thiz == 0x005AE410) {
+    //     return std::hash<int>()(g_connection.seednum0 + g_real_frame + ((++g_seed_numA * 114 + 514) ^ 0x1919810) * 114514);
+    // }else if (thiz == 0x005AE420) {
+    //     return std::hash<int>()(g_connection.seednum0 + g_real_frame + ((++g_seed_numB * 114 + 514) ^ 0x1919810) * 114514);
+    // }else{
+    //     return std::hash<int>()(g_connection.seednum0 + g_real_frame + ((g_seed_numB * 114 + 514) ^ 0x1919810) * 114514);
+    // }
+    return Original_GetRng((DWORD*)thiz);
+}
+
+SHORT __fastcall GetRng2(DWORD thiz)
+{
+    // *(DWORD*)(thiz + 4) += 1;
+    // LogInfo(std::format("RNGS for {};{}+{}+({},{})", thiz, g_connection.seednum0, g_real_frame, g_seed_numA, g_seed_numB));
+    // if (thiz == 0x005AE410) {
+    //     return std::hash<int>()(g_connection.seednum0 + g_real_frame + ((++g_seed_numA * 114 + 514) ^ 0x1919810) * 114514);
+    // }else if (thiz == 0x005AE420) {
+    //     return std::hash<int>()(g_connection.seednum0 + g_real_frame + ((++g_seed_numB * 114 + 514) ^ 0x1919810) * 114514);
+    // }else {
+    //     return std::hash<int>()(g_connection.seednum0 + g_real_frame + ((g_seed_numB * 114 + 514) ^ 0x1919810) * 114514);
+    // }
+}
+*/
+
+/*
 void __fastcall PlayerState(DWORD ecx)
 {
     if(ecx==*(DWORD*)(0x005AE474)){
@@ -90,40 +117,11 @@ void __fastcall PlayerState(DWORD ecx)
     }
 }
 
-
-DWORD __fastcall GetRng(DWORD thiz)
-{
-    *(DWORD*)(thiz + 4) += 2;
-    LogInfo(std::format("RNGD for {};{}+{}+({},{})",thiz,        g_connection.seednum0, g_real_frame, g_seed_numA, g_seed_numB));
-    if (thiz == 0x005AE410) {
-        return std::hash<int>()(g_connection.seednum0 + g_real_frame + ((++g_seed_numA * 114 + 514) ^ 0x1919810) * 114514);
-    }else if (thiz == 0x005AE420) {
-        return std::hash<int>()(g_connection.seednum0 + g_real_frame + ((++g_seed_numB * 114 + 514) ^ 0x1919810) * 114514);
-    }else{
-        return std::hash<int>()(g_connection.seednum0 + g_real_frame + ((g_seed_numB * 114 + 514) ^ 0x1919810) * 114514);
-    }
-    return Original_GetRng((DWORD*)thiz);
-}
-
-SHORT __fastcall GetRng2(DWORD thiz)
-{
-    *(DWORD*)(thiz + 4) += 1;
-    LogInfo(std::format("RNGS for {};{}+{}+({},{})", thiz, g_connection.seednum0, g_real_frame, g_seed_numA, g_seed_numB));
-    if (thiz == 0x005AE410) {
-        return std::hash<int>()(g_connection.seednum0 + g_real_frame + ((++g_seed_numA * 114 + 514) ^ 0x1919810) * 114514);
-    }else if (thiz == 0x005AE420) {
-        return std::hash<int>()(g_connection.seednum0 + g_real_frame + ((++g_seed_numB * 114 + 514) ^ 0x1919810) * 114514);
-    }else {
-        return std::hash<int>()(g_connection.seednum0 + g_real_frame + ((g_seed_numB * 114 + 514) ^ 0x1919810) * 114514);
-    }
-}
-
-
 void SetPlayer()
 {
     if (*(DWORD*)(0x005AE4B0) == 0)
     {
-        g_connection.seednum0++;
+        //g_connection.seednum0++;
         g_real_frame = 0;
         g_seed_numA = 0;
         g_seed_numB = 0;
@@ -136,6 +134,7 @@ void SetLife2()
     g_seed_numA = 0;
     g_seed_numB = 0;
 }
+*/
 
 bool IsOnWindow()
 {
@@ -182,15 +181,10 @@ DWORD GetKeyStateP2_original(DWORD keyStruct, __int16* keyMapStruct)
 
 void RemoveKey()
 {
-    // LogInfo(std::format("remove frame{}~{}", std::max(-1, g_cur_frame - 4 * g_connection.delay_compensation - 2), g_cur_frame - 3 * g_connection.delay_compensation - 1));
-    //for (int i = std::max(-1,g_cur_frame - 4 * g_connection.delay_compensation - 2); i < g_cur_frame - 3 * g_connection.delay_compensation - 1; i++){
-    //   g_keystate_rcved.erase(i);
-    //   g_keystate_self.erase(i);
-    //}
-    // int m = std::max(-1, g_cur_frame - 4 * g_connection.delay_compensation - 2);
-    int n = g_cur_frame - 3 * g_connection.delay_compensation - 1;
-    auto p = [n](std::pair<int, KeyState> i)->bool {
-        return i.first<n || i.first>g_cur_frame+5;
+    auto p = [](std::pair<int, KeyState> i)->bool {
+        if (i.first != i.second.frame)
+            LogError(std::format("wrong frame from index, {}:{}",i.first,i.second.frame));
+        return i.first < (g_ui_frame - g_connection.delay_compensation*2 - 20) || (i.first > g_ui_frame + g_connection.delay_compensation*2 + 20);
     };
     auto m = [p](std::unordered_map<int, KeyState>& m)
     {
@@ -206,126 +200,44 @@ void RemoveKey()
     m(g_keystate_self);
 }
 
-bool SendKey(int f)
-{
-    if (g_keystate_self.contains(f) == false) {
-        LogError(std::format("fail to get keystate for frame {} , cur {}", f, g_cur_frame));
-        if (IsInGame()) {
-            g_connection.SendHostPrepared();
-            return false;
-        }
-        if (g_cur_frame <= f){
-            static int i = 0;
-            i++;
-            if(i%5==0)
-                g_connection.SendShouldWait();
-            return false;
-        }
-        return false;
-    }
-    Pack key_data;
-    key_data.type = Pack_Type::Operation_Pack;
-
-    for (int i = 0; i < Pack::c_PackKeyStateNum; i++){
-        if (f - i >= 0 && g_keystate_self.contains(f-i)){
-            key_data.key_state_pack.key_state[i] = g_keystate_self[f-i];
-        }else{
-            key_data.key_state_pack.key_state[i].frame = -1;
-        }
-    }
-    g_connection.SendPack(key_data);
-    return true;
-}
-
-void SendLostKey(int f) {
-    static int n = 0;
-    if (n % 20 == 0 || n <= 20){
-        if (g_connection.is_Host == false)
-            g_connection.SendGuestPrepared();
-        n++;
-    }
-    Pack lost_key;
-    lost_key.type = Pack_Type::State_Pack;
-    lost_key.state_pack.state = StatePack_State::Missing_Frame;
-    lost_key.state_pack.frame = f;
-    g_connection.SendPack(lost_key);
-}
-
-bool ReceivePacks();
-
-bool SendLostKeyM(int f)
-{
-    static int s_delay = 5;
-    LARGE_INTEGER t1;
-    QueryPerformanceCounter(&t1);
-    while (true)
-    {
-        if (!g_connection.is_started)
-            return false;
-        LARGE_INTEGER t2;
-        QueryPerformanceCounter(&t2);
-        int cur_delay = CalTimePeriod(t1, t2);
-        if (cur_delay >= 5000) {//5000 ms timeout
-            LogError("time out");
-            g_connection.SendEndConnect();
-            g_connection.EndConnect();
-            return false;
-        }
-        static int n = 0;
-        if (n % 30 == 0 || n <= 10) {
-            if (g_connection.is_Host == false)
-                g_connection.SendGuestPrepared();
-            n++;
-        }
-        Pack lost_key;
-        lost_key.type = Pack_Type::State_Pack;
-        lost_key.state_pack.state = StatePack_State::Missing_Frame;
-        lost_key.state_pack.frame = f;
-        g_connection.SendPack(lost_key);
-        for(int i=0;i<std::clamp(s_delay/2+1,5,200);i++)
-        {
-            if (ReceivePacks() && f > 2 * g_connection.delay_compensation) {
-                g_keystate_rcved[f].frame = f;
-                g_keystate_rcved[f].state = 1; // Z
-                return true;
-            }
-            if (g_keystate_rcved.contains(f)) {
-                if (cur_delay <= 200)
-                    s_delay = std::ceil((float)s_delay * 0.8f + (float)cur_delay * 0.2f);
-                else
-                    s_delay = 200;
-                return true;
-            }
-            Delay(1);
-        }
-    }
-    return false;
-}
-
 DWORD GetCurrentReceivedKey()
 {
-    if (g_keystate_rcved.contains(g_cur_frame - g_connection.delay_compensation)) {
+    if(g_keystate_rcved.contains(g_ui_frame))
+        return g_keystate_rcved[g_ui_frame].state;
 
-        auto kst=g_keystate_rcved[g_cur_frame - g_connection.delay_compensation];
-        return kst.state;
-    }else {
-        if (SendLostKeyM(g_cur_frame - g_connection.delay_compensation))
-            return g_keystate_rcved[g_cur_frame - g_connection.delay_compensation].state;
-        return 0;
+    LogError(std::format("fail to get cur rcv key : {}",g_ui_frame));
+    int i = 0;
+
+    HandlePacks();
+    while (!g_keystate_rcved.contains(g_ui_frame)) {
+        if (g_connection.connect_state == ConnectState::No_Connection)
+            return 0;
+        Delay(16);
+        HandlePacks();
+        if (i > g_connection.delay_compensation + P2PConnection::max_frame_wait){
+            LogError("fail to Connect");
+            g_connection.EndConnect();
+            return 0;
+        }
+        i++;
     }
+    return g_keystate_rcved[g_ui_frame].state;
 }
 
 DWORD GetCurrentSelfKey()
 {
-    return g_keystate_self[g_cur_frame - g_connection.delay_compensation].state;
+    if (g_keystate_self.contains(g_ui_frame))
+        return g_keystate_self[g_ui_frame].state;
+    LogError(std::format("fail to get cur slf key : {}", g_ui_frame));
+    return 0;
 }
 
 DWORD GetKeyStateP1(DWORD keyStruct, __int16* keyMapStruct)
 {
     if (g_connection.connect_state==ConnectState::No_Connection){
         return GetKeyStateP1_original(keyStruct,keyMapStruct);
-    }else if(g_connection.connect_state == ConnectState::All_Started) {
-        if (g_connection.is_Host){
+    }else if(g_connection.connect_state == ConnectState::Connected) {
+        if (g_connection.is_host){
             return GetCurrentSelfKey();
         }else{
             return GetCurrentReceivedKey();
@@ -338,8 +250,8 @@ DWORD GetKeyStateP2(DWORD keyStruct, __int16* keyMapStruct)
     if (g_connection.connect_state == ConnectState::No_Connection)
     {
         return GetKeyStateP2_original(keyStruct, keyMapStruct);
-    }else if (g_connection.connect_state == ConnectState::All_Started) {
-        if (g_connection.is_Host){
+    }else if (g_connection.connect_state == ConnectState::Connected) {
+        if (g_connection.is_host){
             return GetCurrentReceivedKey();
         }else {
             return GetCurrentSelfKey();
@@ -353,8 +265,8 @@ DWORD GetKeyStateFull(DWORD keyStruct, __int16* keyMapStruct)
     if (g_connection.connect_state == ConnectState::No_Connection){
         return GetKeyStateFull_original(keyStruct, keyMapStruct);
     }
-    if (g_connection.connect_state == ConnectState::All_Started){
-        if (g_connection.is_Host){
+    if (g_connection.connect_state == ConnectState::Connected){
+        if (g_connection.is_host){
             return GetCurrentSelfKey();
         }else{
             return GetCurrentReceivedKey();
@@ -368,22 +280,20 @@ void RecordKey(DWORD keyStruct, __int16* keyMapStruct)
     switch (*(DWORD*)keyStruct)
     {
     case 0:{
-            int ks = 0;
+            DWORD ks = 0;
             if (IsOnWindow()){
                 GetKeyboardState((PBYTE)(keyStruct + 720));
                 ks=GetKeyStateFull_original(keyStruct, keyMapStruct);
             }
-            if (g_real_frame <= 10 && *(DWORD*)(0x005AE474))
-            {
-                g_keystate_self[g_cur_frame].state = 0;
-                g_keystate_self[g_cur_frame].frame = g_cur_frame;
-            }else{
-                g_keystate_self[g_cur_frame].state = ks;
-                g_keystate_self[g_cur_frame].frame = g_cur_frame;
+            int real_cur_frame = g_ui_frame + g_connection.delay_compensation;
+            if (!g_keystate_self.contains(real_cur_frame)){
+                KeyState state = { 0 };
+                state.state = ks;
+                state.frame = real_cur_frame;
+                CopyFromOriginalSeeds(state.seednum);
+                g_keystate_self[real_cur_frame]=state;
             }
-            SendKey(g_cur_frame);
             RemoveKey();
-            g_cur_frame++;
             return;
         }
         break;
@@ -394,70 +304,6 @@ void RecordKey(DWORD keyStruct, __int16* keyMapStruct)
     default:
         return;
     }
-}
-
-bool ReceivePacks()
-{
-    bool has_other_enterd_game = false;
-    *(DWORD*)0x005AE410 = g_connection.seednum0;
-    *(DWORD*)0x005AE420 = g_connection.seednum0;
-    *(DWORD*)0x005AE430 = g_connection.seednum0;
-    Pack pdata;
-    while (g_connection.RcvPack(&pdata) > 0){
-        if (!g_connection.is_started)
-            return false;
-        if (pdata.type == Pack_Type::State_Pack) {
-            switch (pdata.state_pack.state)
-            {
-            case StatePack_State::Guest_Prepared:
-                if (g_connection.connect_state == ConnectState::Host_Started) {
-                    g_connection.seednum0 = pdata.state_pack.seednum0;
-                    *(DWORD*)(0x00608644) = pdata.state_pack.cfg_flag[0];
-                    *(DWORD*)(0x00608648) = pdata.state_pack.cfg_flag[1];
-                    *(DWORD*)(0x0060864C) = pdata.state_pack.cfg_flag[2];
-                    //SetSeed(pdata.state_pack.seed);
-                    g_cur_frame = g_connection.delay_compensation;
-                    g_connection.connect_state = ConnectState::All_Started;
-                    LogInfo("received from Guest");
-                }
-                break;
-            case StatePack_State::Missing_Frame:
-                if (pdata.state_pack.frame >= g_cur_frame - Pack::c_PackKeyStateNum && pdata.state_pack.frame <= g_cur_frame-1)
-                    SendKey(g_cur_frame - 1);
-                else
-                    SendKey(pdata.state_pack.frame);
-                break;
-            default:
-            case StatePack_State::Should_Wait:
-                Delay(9);
-                break;
-            case StatePack_State::End_Connection:
-                g_connection.EndConnect();
-                break;
-            case StatePack_State::Entering_Game:
-                has_other_enterd_game = true;
-                break;
-            }
-        }else if (pdata.type == Pack_Type::Operation_Pack) {
-            int fr = INT_MAX;
-            for (int i = 0; i < Pack::c_PackKeyStateNum; i++){
-                auto ks = pdata.key_state_pack.key_state[i];
-                if (ks.frame <= -1)
-                    break;
-                if (ks.frame <= g_cur_frame && ks.frame >= g_cur_frame - g_connection.delay_compensation) {
-                    fr = std::min(fr, ks.frame);
-                    g_keystate_rcved[ks.frame] = ks;
-                }
-            }
-            if (fr != INT_MAX){
-                for (int i = std::max(g_cur_frame - g_connection.delay_compensation, 0); i < fr; i++) {
-                    if (!g_keystate_rcved.contains(i))
-                        SendLostKey(i);
-                }
-            }
-        }
-    }
-    return has_other_enterd_game;
 }
 
 
@@ -513,11 +359,8 @@ int __fastcall MyGetKeyState(DWORD thiz) {
     v4 = (__int16*)(v3 + Address<DWORD>(0x5AE3A0).GetValue() + 0x2E38);
 
 
-    if (g_connection.connect_state == ConnectState::All_Started){
+    if (g_connection.connect_state == ConnectState::Connected){
         RecordKey(v1, v4);
-    }
-    if (g_connection.connect_state == ConnectState::All_Started || g_connection.connect_state == ConnectState::Host_Started){
-        ReceivePacks();
     }
 
     switch (*(DWORD*)v1)
