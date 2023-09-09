@@ -59,7 +59,7 @@ void InitGameValue()
 void EnterGame()
 {
     InitGameValue();
-    g_connection.SendEnteringGame();
+    g_connection.SendHostPrepared();
 }
 
 DWORD __fastcall Original_GetRng(DWORD* thiz)
@@ -211,7 +211,7 @@ bool SendKey(int f)
     if (g_keystate_self.contains(f) == false) {
         LogError(std::format("fail to get keystate for frame {} , cur {}", f, g_cur_frame));
         if (IsInGame()) {
-            g_connection.SendEnteringGame();
+            g_connection.SendHostPrepared();
             return false;
         }
         if (g_cur_frame <= f){

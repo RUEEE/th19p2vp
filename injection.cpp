@@ -366,7 +366,7 @@ void InjectAll()
 {
      HookCall((LPVOID)0x004ABAB2, MyGetKeyState);
      InitUtils();
-     P2PConnection::SetUpConnect();
+     P2PConnection::WSAStartUp();
      
      Address<BYTE>(0x402C00).SetValue(0xE9);
      Address<DWORD>(0x402C01).SetValue((DWORD)(GetRng)-0x402C00-5);
