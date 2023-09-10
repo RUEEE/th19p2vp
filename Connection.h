@@ -57,7 +57,7 @@ enum ConnectState
 struct P2PConnection
 {
 	static constexpr int max_frame_timeout = 180;
-	static constexpr int max_time_retry_timeout = 60;
+	static constexpr int max_time_retry_timeout = 32;
 
 	void SetSocketBlocking(SOCKET sock);
 

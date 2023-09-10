@@ -417,7 +417,13 @@ int __fastcall MyGetKeyState(DWORD thiz) {
     //set control
     *(DWORD*)(0x0060860C) = 1;
     *(DWORD*)(0x00608610) = 2;
+    DWORD control_option = VALUED(0x005AE3A0);
 
+    if (control_option)
+    {
+        VALUED(control_option + 0x2E24) = 1;
+        VALUED(control_option + 0x2E28) = 2;
+    }
 
     int v1; // ebx
     unsigned int v2; // esi
@@ -569,12 +575,13 @@ int __fastcall MyGetKeyState(DWORD thiz) {
     case 2:
         v30 = *(DWORD*)(v1 + 12);
         memset(&pState, 0, sizeof(pState));
-        if (g_connection.connect_state == Connected)
-        {
-            v2 = GetKeyStateP1(v1, v4);
+        if (XInputGetState(v30, &pState))
+            goto LABEL_96;
+        if (g_connection.connect_state == Connected){
+                v2 = GetKeyStateFull(v1, v4);
             goto LABEL_96;
         }
-        if (XInputGetState(v30, &pState))
+        if (!IsOnWindow())
             goto LABEL_96;
         v6 = pState.Gamepad.wButtons;
         if (pState.Gamepad.bLeftTrigger >= 0x1Eu)

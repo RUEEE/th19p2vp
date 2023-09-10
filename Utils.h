@@ -13,7 +13,7 @@ void Delay(int millisec);
 
 ImVec2 GetStageFromClient(ImVec2 client, ImVec2 client_sz, bool is_1P);
 ImVec2 GetClientFromStage(ImVec2 stage, ImVec2 client_sz, bool is_1P);
-#define VALUED(x)  (*(DWORD*)x)
-#define VALUEF(x)  (*(float*)x)
-#define VALUEW(x)  (*(WORD*)x)
-#define VALUEV(x,T)  (*(T*)x)
+#define VALUED(x)  (*(DWORD*)(x))
+#define VALUEF(x)  (*(float*)(x))
+#define VALUEW(x)  (*(WORD*)(x))
+#define VALUEV(x,T)  (*(T*)(x))
