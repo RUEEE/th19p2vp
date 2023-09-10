@@ -140,11 +140,11 @@ void SetUI(IDirect3DDevice9* device)
 
 
 
-    for (int i = 0; i < 7; i++) {
-        auto addr = Address<BYTE>(0x00530ACC + i);
-        addr.SetValue(0x90);
-    }//invincible
-    *(DWORD*)(0x00607930) = 2500;
-    *(DWORD*)(0x006079F0) = 2500;
+    // for (int i = 0; i < 7; i++) {
+    //     auto addr = Address<BYTE>(0x00530ACC + i);
+    //     addr.SetValue(0x90);
+    // }//invincible
+    // *(DWORD*)(0x00607930) = 2500;
+    // *(DWORD*)(0x006079F0) = 2500;
     //inf power
 }
