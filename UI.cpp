@@ -62,7 +62,13 @@ void SetUI(IDirect3DDevice9* device)
     }else{
         ImGui::Begin("Waiting for P2###wind", 0, ImGuiWindowFlags_::ImGuiWindowFlags_NoMove | ImGuiWindowFlags_::ImGuiWindowFlags_NoResize);
     }
-    g_is_focus_ui = ImGui::IsWindowFocused();
+    if (g_connection.connect_state == ConnectState::No_Connection){
+        g_is_focus_ui = ImGui::IsWindowFocused();
+    }else{
+        g_is_focus_ui = false;
+    }
+
+    
     is_collapse=ImGui::IsWindowCollapsed();
 
     SeedType seed[4];
