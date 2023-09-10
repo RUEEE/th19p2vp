@@ -11,7 +11,7 @@
 
 enum StatePack_State
 {
-	Host_State,No_State,WAIT_STATE
+	Host_State,No_State,Wait_State,Guest_Request,Guest_Confirm
 };
 
 struct Data_StatePack
@@ -51,16 +51,15 @@ struct Pack
 
 enum ConnectState
 {
-	No_Connection,Host_Listening,Guest_Requesting, Connected
+	No_Connection,Host_Listening,Guest_Requesting,Host_Confirming,Connected
 };
 
 struct P2PConnection
 {
-	static constexpr int max_frame_wait = 180;
+	static constexpr int max_frame_timeout = 180;
+	static constexpr int max_time_retry_timeout = 60;
 
 	void SetSocketBlocking(SOCKET sock);
-	SOCKET GetCurrentTCPSocket();
-
 
 	ConnectState connect_state;
 	int64_t pack_index;
@@ -82,10 +81,6 @@ struct P2PConnection
 		sockaddr_in6 addr_other6;
 		sockaddr_in addr_other4;
 	};
-	SOCKET socket_listen_host;
-	SOCKET socket_guest;
-	SOCKET socket_host;
-
 	SOCKET socket_udp;//to send frame states
 
 	int delay_compensation;
@@ -94,8 +89,6 @@ struct P2PConnection
 	bool SetUpConnect_Guest();
 	bool SetUpConnect_Host();
 
-	bool Host_Listening();
-	bool Guest_Request();
 
 	void EndConnect();
 
@@ -103,17 +96,10 @@ struct P2PConnection
 	static bool WSAStartUp();
 
 	Pack CreateEmptyPack();
-	int RcvPack(SOCKET sock,bool is_tcp);
-	int RcvTCPPack();
 	int RcvUDPPack();
-	
-	int SendPack(SOCKET sock, Data_KeyState data, bool is_tcp);
 	int SendUDPPack(Data_KeyState data);
-	int SendTCPPack(Data_KeyState data);
-
-	int SendTCP_UDP_Pack(Data_NAK_KeyState data);
-
-	int SendTCPPack(Data_StatePack data);
+	int SendUDPPack(Data_NAK_KeyState data);
+	int SendUDPPack(Data_StatePack data);
 };
 
 

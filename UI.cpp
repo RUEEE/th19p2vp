@@ -129,15 +129,22 @@ void SetUI(IDirect3DDevice9* device)
         std::fstream fs("latest.log", std::ios::ate | std::ios::out);
         fs << g_log;
         fs.close();
-    }
-    ImGui::SameLine();
-    ImGui::SetNextItemWidth(50.0f);
-    if (ImGui::Button("clear log"))
-    {
         g_log = "";
     }
     ImGui::SameLine();
     ImGui::SetNextItemWidth(50.0f);
-    ImGui::Checkbox("record log", &g_is_log);
+    ImGui::SameLine();
+    ImGui::SetNextItemWidth(50.0f);
+    ImGui::Checkbox("log", &g_is_log);
     ImGui::End();
+
+
+
+    for (int i = 0; i < 7; i++) {
+        auto addr = Address<BYTE>(0x00530ACC + i);
+        addr.SetValue(0x90);
+    }//invincible
+    *(DWORD*)(0x00607930) = 2500;
+    *(DWORD*)(0x006079F0) = 2500;
+    //inf power
 }
