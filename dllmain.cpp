@@ -4,12 +4,14 @@
 #include "injection.h"
 #include "Address.h"
 #include "imgui\imgui.h"
+#include "Connection.h"
 
 extern "C" __declspec(dllexport)void func()
 {
 
 }
 
+extern P2PConnection g_connection;
 
 #define msg(x)  MessageBoxA(NULL, x, x, MB_OK);
 //#define msg(x);
@@ -33,6 +35,8 @@ BOOL APIENTRY DllMain(HMODULE hModule,
     case DLL_THREAD_DETACH:
         break;
     case DLL_PROCESS_DETACH:
+        g_connection.EndConnect();
+        WSACleanup();
         unHook();
         terminate();
         break;
