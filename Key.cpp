@@ -178,6 +178,65 @@ DWORD GetKeyStateP2_original(DWORD keyStruct, __int16* keyMapStruct)
     return ks;
 }
 
+DWORD GetKeyStateGamePad_original(DWORD keyStruct, __int16* keyMapStruct, XINPUT_STATE* ipState,bool* has_gp)
+{
+    DWORD ks;
+    if (!IsOnWindow())
+        return 0;
+    DWORD v30 = *(DWORD*)(keyStruct + 12);
+    XINPUT_STATE& state=*ipState;
+    memset(&state, 0, sizeof(state));
+    if (XInputGetState(v30, &state))
+    {
+        *has_gp = false;
+        return 0;
+    }
+    *has_gp = true;
+    auto kst = state.Gamepad.wButtons;
+    if (state.Gamepad.bLeftTrigger >= 0x1Eu)
+        kst = state.Gamepad.wButtons | 0x10000;
+    if (state.Gamepad.bRightTrigger >= 0x1Eu)
+        kst |= 0x20000u;
+    if (state.Gamepad.sThumbLY >= 7849)
+        kst |= 1u;
+    if (state.Gamepad.sThumbLY <= -7849)
+        kst |= 2u;
+    if (state.Gamepad.sThumbLX >= 7849)
+        kst |= 8u;
+    if (state.Gamepad.sThumbLX <= -7849)
+        kst |= 4u;
+
+    DWORD v7 = (0x10 * (kst & 1)) | 0x20;
+    if ((kst & 2) == 0)
+        v7 = 0x10 * (kst & 1);
+    DWORD v8 = v7 | 0x40;
+    if ((kst & 4) == 0)
+        v8 = v7;
+    DWORD  v9 = v8 | 0x80;
+    if ((kst & 8) == 0)
+        v9 = v8;
+    DWORD v10 = v9 | 1;
+    DWORD v11, v12, v13, v14;
+    {
+        DWORD* dword_5743E8 = (DWORD*)(0x5743E8);
+        if ((kst & dword_5743E8[keyMapStruct[9]]) == 0)
+            v10 = v9;
+        v11 = v10 | 2;
+        if ((kst & dword_5743E8[keyMapStruct[10]]) == 0)
+            v11 = v10;
+        v12 = v11 | 4;
+        if ((kst & dword_5743E8[keyMapStruct[11]]) == 0)
+            v12 = v11;
+        v13 = v12 | 8;
+        if ((kst & dword_5743E8[keyMapStruct[12]]) == 0)
+            v13 = v12;
+        ks = v13 | 0x100;
+        if ((kst & dword_5743E8[keyMapStruct[13]]) == 0)
+            ks = v13;
+    }
+    return ks;
+}
+
 
 void RemoveKey()
 {
@@ -301,33 +360,48 @@ DWORD GetKeyStateFull(DWORD keyStruct, __int16* keyMapStruct)
 
 void RecordKey(DWORD keyStruct, __int16* keyMapStruct)
 {
+    bool has_gp = false;
+    DWORD ks = 0;
     switch (*(DWORD*)keyStruct)
     {
-    case 0:{
-            DWORD ks = 0;
-            if (IsOnWindow()){
-                GetKeyboardState((PBYTE)(keyStruct + 720));
-                ks=GetKeyStateFull_original(keyStruct, keyMapStruct);
-            }
-            int real_cur_frame = g_ui_frame + g_connection.delay_compensation;
-            if (!g_keystate_self.contains(real_cur_frame)){
-                KeyState state = { 0 };
-                state.state = ks;
-                state.frame = real_cur_frame;
-                CopyFromOriginalSeeds(state.seednum);
-                g_keystate_self[real_cur_frame]=state;
-            }
-            RemoveKey();
-            return;
-        }
-        break;
+    case 0:
     case 3:
-        return;
     case 4:
-        return;
-    default:
-        return;
+    {
+        if (IsOnWindow()) {
+            GetKeyboardState((PBYTE)(keyStruct + 720));
+            ks = GetKeyStateFull_original(keyStruct, keyMapStruct);
+        }
     }
+        break;
+    case 2://gamepad
+    {
+        if (IsOnWindow()) {
+            XINPUT_STATE stt;
+            
+            ks = GetKeyStateGamePad_original(keyStruct, keyMapStruct,&stt,&has_gp);
+            if (!has_gp)
+                return;
+        }
+    }
+    break;
+    default:
+        break;
+    }
+    int real_cur_frame = g_ui_frame + g_connection.delay_compensation;
+    if (!g_keystate_self.contains(real_cur_frame)) {
+        KeyState state = { 0 };
+        state.state = ks;
+        state.frame = real_cur_frame;
+        CopyFromOriginalSeeds(state.seednum);
+        g_keystate_self[real_cur_frame] = state;
+    }else if(has_gp){
+        KeyState state = g_keystate_self[real_cur_frame];
+        state.state |= ks;
+        state.frame = real_cur_frame;
+        g_keystate_self[real_cur_frame] = state;
+    }
+    RemoveKey();
 }
 
 
@@ -489,7 +563,11 @@ int __fastcall MyGetKeyState(DWORD thiz) {
     case 2:
         v30 = *(DWORD*)(v1 + 12);
         memset(&pState, 0, sizeof(pState));
-        goto LABEL_96;
+        if (g_connection.connect_state == Connected)
+        {
+            v2 = GetKeyStateP1(v1, v4);
+            goto LABEL_96;
+        }
         if (XInputGetState(v30, &pState))
             goto LABEL_96;
         v6 = pState.Gamepad.wButtons;
@@ -516,7 +594,7 @@ int __fastcall MyGetKeyState(DWORD thiz) {
             v9 = v8;
         v10 = v9 | 1;
         {
-            DWORD* dword_5743E8 = *(DWORD**)(0x5743E8);
+            DWORD* dword_5743E8 = (DWORD*)(0x5743E8);
             if ((v6 & dword_5743E8[v4[9]]) == 0)
                 v10 = v9;
             v11 = v10 | 2;
