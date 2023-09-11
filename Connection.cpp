@@ -142,7 +142,7 @@ void ConnectLoop()
 			HandlePacks();
 			LogInfo("no cur seed");
 			bool has_seed = false;
-			for (int i = 0; i < g_connection.max_time_retry_timeout; i++)
+			for (int i = 0; i < g_connection.c_max_time_retry_timeout; i++)
 			{
 				g_connection.SendUDPPack(Data_NAK_KeyState(g_ui_frame));
 				LARGE_INTEGER time_begin;
@@ -182,14 +182,14 @@ void ConnectLoop()
 			LARGE_INTEGER cur_time_try_sync;
 			static LARGE_INTEGER last_time_try_sync = { 0 };
 			QueryPerformanceCounter(&cur_time_try_sync);
-			if (last_time_try_sync.QuadPart==0 || (CalTimePeriod(last_time_try_sync,cur_time_try_sync)>=5000))//5s
+			if (last_time_try_sync.QuadPart==0 || (CalTimePeriod(last_time_try_sync,cur_time_try_sync)>= g_connection.c_time_ms_retry_sync))//2000ms
 			{
 				LogInfo("try sync");
 				last_time_try_sync = cur_time_try_sync;
 				if (g_connection.is_host)
 				{//host
 					bool is_try_synced = false;
-					for (int i = 0; i < g_connection.max_time_retry_timeout; i++)
+					for (int i = 0; i < g_connection.c_max_time_retry_timeout; i++)
 					{
 						g_connection.SendUDPPack(Data_StatePack(StatePack_State::Host_Sync));
 						for (int j = 0; j < g_connection.delay_compensation; j++)
@@ -255,7 +255,7 @@ void ConnectLoop()
 					}
 				}else { //guest
 					bool is_try_synced = false;
-					for (int i = 0; i < g_connection.max_time_retry_timeout * g_connection.delay_compensation; i++)
+					for (int i = 0; i < g_connection.c_max_time_retry_timeout * g_connection.delay_compensation; i++)
 					{
 						Delay(12);
 						while (g_connection.RcvUDPPack() > 0);
@@ -336,7 +336,7 @@ void ConnectLoop()
 	{
 		LogInfo("requesting");
 		bool is_host_accepted=false;
-		for(int i=0;i<g_connection.max_time_retry_timeout;i++)
+		for(int i=0;i<g_connection.c_max_time_retry_timeout;i++)
 		{
 			g_connection.SendUDPPack(Data_StatePack(StatePack_State::Guest_Request));
 			for (int j = 0; j < g_connection.delay_compensation; j++)
@@ -386,7 +386,7 @@ HOST_COMFIRMING:
 	{
 		LogInfo("confirming");
 		bool is_guest_confirmed = false;
-		for (int i = 0; i < g_connection.max_time_retry_timeout; i++)
+		for (int i = 0; i < g_connection.c_max_time_retry_timeout; i++)
 		{
 			g_connection.SendUDPPack(Data_StatePack(StatePack_State::Host_State));
 			for (int j = 0; j < g_connection.delay_compensation; j++){
@@ -436,7 +436,7 @@ P2PConnection::P2PConnection():
 	connect_state(ConnectState::No_Connection)
 {
 	// QueryPerformanceCounter(&last_init_value);
-	strcpy_s(address, "127.0.0.1");
+	strcpy_s(address, "");
 	memset(&addr_self6, 0, sizeof(addr_self6));
 	memset(&addr_other6, 0, sizeof(addr_other6));
 	memset(&addr_self4, 0, sizeof(addr_self4));

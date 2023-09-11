@@ -276,7 +276,7 @@ DWORD GetCurrentReceivedKey()
             }
         }
         bool has_key = false;
-        for (int i = 0; i < g_connection.max_time_retry_timeout; i++)
+        for (int i = 0; i < g_connection.c_max_time_retry_timeout; i++)
         {
             g_connection.SendUDPPack(Data_NAK_KeyState(g_ui_frame));
             LARGE_INTEGER time_begin;

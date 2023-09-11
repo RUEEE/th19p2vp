@@ -47,7 +47,7 @@ void SetUI(IDirect3DDevice9* device)
     static bool is_collapse = false;
 
     //ImGui::SetNextWindowSizeConstraints(ImVec2(320.0f, 200.0f), ImVec2(320.0f, 200.0f));
-    ImGui::SetNextWindowSize(ImVec2(400.0f, 200.0f));
+    ImGui::SetNextWindowSize(ImVec2(365.0f, 175.0f));
     ImGui::SetNextWindowPos(ImVec2(0.0f, 0.0f));
 
     ImGui::SetNextWindowCollapsed(is_collapse);
@@ -58,9 +58,12 @@ void SetUI(IDirect3DDevice9* device)
         if(g_is_synced)
             ImGui::Begin("PVP###wind", 0, ImGuiWindowFlags_::ImGuiWindowFlags_NoMove | ImGuiWindowFlags_::ImGuiWindowFlags_NoResize);
         else
-            ImGui::Begin("desync probably###wind", 0, ImGuiWindowFlags_::ImGuiWindowFlags_NoMove | ImGuiWindowFlags_::ImGuiWindowFlags_NoResize);
+            ImGui::Begin("Desync Probably###wind", 0, ImGuiWindowFlags_::ImGuiWindowFlags_NoMove | ImGuiWindowFlags_::ImGuiWindowFlags_NoResize);
     }else{
-        ImGui::Begin("Waiting for P2###wind", 0, ImGuiWindowFlags_::ImGuiWindowFlags_NoMove | ImGuiWindowFlags_::ImGuiWindowFlags_NoResize);
+        if(g_connection.is_ipv6)
+            ImGui::Begin("(ipv6) Waiting for P2###wind", 0, ImGuiWindowFlags_::ImGuiWindowFlags_NoMove | ImGuiWindowFlags_::ImGuiWindowFlags_NoResize);
+        else
+            ImGui::Begin("(ipv4) Waiting for P2###wind", 0, ImGuiWindowFlags_::ImGuiWindowFlags_NoMove | ImGuiWindowFlags_::ImGuiWindowFlags_NoResize);
     }
     if (g_connection.connect_state == ConnectState::No_Connection){
         g_is_focus_ui = ImGui::IsWindowFocused();
@@ -73,22 +76,27 @@ void SetUI(IDirect3DDevice9* device)
 
     SeedType seed[4];
     CopyFromOriginalSeeds(seed);
-    ImGui::LabelText(" ", "%d; %d,%d,%d,%d", g_ui_frame,seed[0],seed[1],seed[2],seed[3]);
+    ImGui::TextColored(ImVec4(0.3f,0.7f,0.6f,1.0f),"ver 1.01");
+    ImGui::SameLine();
+    ImGui::LabelText(" ", "t=%d; seed=(%d,%d,%d,%d)", g_ui_frame,seed[0],seed[1],seed[2],seed[3]);
 
     ImGui::SetNextItemWidth(100.0f);
-    ImGui::InputText(" Host IP ", g_connection.address, sizeof(g_connection.address));
+    ImGui::InputText("Host IP  ", g_connection.address, sizeof(g_connection.address));
 
     ImGui::SameLine();
     ImGui::SetNextItemWidth(100.0f);
-    ImGui::DragInt("delay", &g_connection.delay_compensation, 1.0f, 1, 180, "%d frame");
+    ImGui::InputInt("delay", &g_connection.delay_compensation, 1,5);
+    g_connection.delay_compensation = std::clamp(g_connection.delay_compensation, 1, 180);
 
     
     ImGui::SetNextItemWidth(100.0f);
-    ImGui::DragInt("Host port", &g_connection.port_Host, 1.0f, 0, 9999);
-    
+    ImGui::InputInt("Host port", &g_connection.port_Host, 1);
+    g_connection.port_Host = std::clamp(g_connection.port_Host, 0, 65535);
+
     ImGui::SameLine();
     ImGui::SetNextItemWidth(100.0f);
-    ImGui::DragInt("Guest port", &g_connection.port_Guest, 1.0f, 0, 9999);
+    ImGui::InputInt("Guest port", &g_connection.port_Guest, 1);
+    g_connection.port_Guest = std::clamp(g_connection.port_Guest, 0, 65535);
     
 
     ImGui::Columns(2,0,false);
