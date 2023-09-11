@@ -21,7 +21,7 @@ extern LARGE_INTEGER g_cur_time;
 
 std::unordered_map<int, KeyState> g_keystate_self;
 std::unordered_map<int, KeyState> g_keystate_rcved;
-
+extern bool g_is_loading;
 
 /*
 bool IsInGame()
@@ -366,6 +366,17 @@ DWORD GetKeyStateFull(DWORD keyStruct, __int16* keyMapStruct)
 
 void RecordKey(DWORD keyStruct, __int16* keyMapStruct)
 {
+    int real_cur_frame = g_ui_frame + g_connection.delay_compensation;
+    if (g_is_loading)
+    {
+        if (!g_keystate_self.contains(real_cur_frame)) {
+            KeyState state = { 0 };
+            state.state = 0;
+            state.frame = real_cur_frame;
+            CopyFromOriginalSeeds(state.seednum);
+            g_keystate_self[real_cur_frame] = state;
+        }
+    }
     bool has_gp = false;
     DWORD ks = 0;
     switch (*(DWORD*)keyStruct)
@@ -394,7 +405,7 @@ void RecordKey(DWORD keyStruct, __int16* keyMapStruct)
     default:
         break;
     }
-    int real_cur_frame = g_ui_frame + g_connection.delay_compensation;
+    
     if (!g_keystate_self.contains(real_cur_frame)) {
         KeyState state = { 0 };
         state.state = ks;

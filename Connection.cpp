@@ -102,13 +102,16 @@ void HandlePacks()
 					Delay(ps->wait_frame * 14);
 					last_delay_frame = g_ui_frame;
 				}
+			}
+			else if (ps->state == StatePack_State::Host_Sync) {
+				LogInfo("host sync");
 			}else{
 				LogInfo("unknown state");
 			}
 		}else if (pk){
 			for (int i = 0; i < Data_KeyState::c_PackKeyStateNum; i++){
 				auto& s = pk->key_state[i];
-				if(s.frame>=0 && !g_keystate_rcved.contains(s.frame))
+				if(s.frame>=0)
 					g_keystate_rcved[s.frame] = s;
 			}
 		}else if (pnak){
@@ -171,7 +174,133 @@ void ConnectLoop()
 			if (g_keystate_rcved[g_ui_frame].seednum[i] != g_keystate_self[g_ui_frame].seednum[i]) {
 				LogError(std::format("Fail to sync {}, seed {} : {}/{}",g_ui_frame, i, g_keystate_self[g_ui_frame].seednum[i], g_keystate_rcved[g_ui_frame].seednum[i]));
 				g_is_synced = false;
+			}
+		}
 
+		if (g_is_synced == false && (VALUED(0x005AE474)==0) && (VALUED(0x005AE624)!=0))//not in-game desync
+		{
+			LARGE_INTEGER cur_time_try_sync;
+			static LARGE_INTEGER last_time_try_sync = { 0 };
+			QueryPerformanceCounter(&cur_time_try_sync);
+			if (last_time_try_sync.QuadPart==0 || (CalTimePeriod(last_time_try_sync,cur_time_try_sync)>=5000))//5s
+			{
+				LogInfo("try sync");
+				last_time_try_sync = cur_time_try_sync;
+				if (g_connection.is_host)
+				{//host
+					bool is_try_synced = false;
+					for (int i = 0; i < g_connection.max_time_retry_timeout; i++)
+					{
+						g_connection.SendUDPPack(Data_StatePack(StatePack_State::Host_Sync));
+						for (int j = 0; j < g_connection.delay_compensation; j++)
+						{
+							Delay(16);
+							while (g_connection.RcvUDPPack() > 0);
+							if (g_connection.connect_state == ConnectState::No_Connection)
+								return;
+							while (!g_connection.packs_rcved.empty()) {
+								Pack p = g_connection.packs_rcved.front();
+								g_connection.packs_rcved.pop();
+								auto ps = get_if<Data_StatePack>(&p.data);
+								auto pk = get_if<Data_KeyState>(&p.data);
+								auto pnak = get_if<Data_NAK_KeyState>(&p.data);
+								if (ps && ps->state == StatePack_State::Guest_Sync_Confirm) {
+									is_try_synced = true;
+									g_connection.packs_rcved = {};
+									break;
+								}else if (pnak) {
+									if (pnak->frame < g_connection.delay_compensation) {
+										is_try_synced = true;
+										g_connection.packs_rcved = {};
+										break;
+									} else {
+										if ((!g_keystate_self.contains(pnak->frame))){
+											Data_KeyState ks;
+											ks.key_state[0] = g_keystate_self[g_ui_frame];
+											ks.key_state[0].frame = pnak->frame;
+											CopyFromOriginalSeeds(ks.key_state[0].seednum);
+											for (int i = 1; i < ks.c_PackKeyStateNum; i++){
+												ks.key_state[i].frame = -1;
+											}
+											g_connection.SendUDPPack(ks);
+										}else{
+											SendKeyStates(pnak->frame);
+										}
+									}
+								}else if (pk) {
+									for (int i = 0; i < Data_KeyState::c_PackKeyStateNum; i++){
+										if (pk->key_state[i].frame!=-1 && pk->key_state[i].frame < g_connection.delay_compensation * 2) {
+											is_try_synced = true;
+											g_connection.packs_rcved = {};
+											break;
+										}
+									}
+									
+								}
+							}
+							if (is_try_synced)
+								break;
+						}
+						if (is_try_synced)
+							break;
+					}
+					if (is_try_synced) {
+						LogInfo("try syncH");
+						StartConnection();
+						SeedType seed[4];
+						CopyFromOriginalSeeds(seed);
+						for (int i = 0; i < 4; i++)
+							LogInfo(std::format("cur seed {}: {}", i, seed[i]));
+						return;
+					}
+				}else { //guest
+					bool is_try_synced = false;
+					for (int i = 0; i < g_connection.max_time_retry_timeout * g_connection.delay_compensation; i++)
+					{
+						Delay(12);
+						while (g_connection.RcvUDPPack() > 0);
+						if (g_connection.connect_state == ConnectState::No_Connection)
+							return;
+						while (!g_connection.packs_rcved.empty()) {
+							Pack p = g_connection.packs_rcved.front();
+							g_connection.packs_rcved.pop();
+							auto ps = get_if<Data_StatePack>(&p.data);
+							auto pnak = get_if<Data_NAK_KeyState>(&p.data);
+							if (ps && ps->state == StatePack_State::Host_Sync) {
+								g_connection.SendUDPPack(Data_StatePack(StatePack_State::Guest_Sync_Confirm));
+								SetHostState(*ps);
+								is_try_synced = true;
+								g_connection.packs_rcved = {};
+								break;
+							}
+							else if (pnak) {
+								if ((!g_keystate_self.contains(pnak->frame)))
+								{
+									Data_KeyState ks;
+									ks.key_state[0] = g_keystate_self[g_ui_frame];
+									ks.key_state[0].frame = pnak->frame;
+									for (int i = 1; i < ks.c_PackKeyStateNum; i++) {
+										ks.key_state[i].frame = -1;
+									}
+									g_connection.SendUDPPack(ks);
+								} else {
+									SendKeyStates(pnak->frame);
+								}
+							}
+						}
+						if (is_try_synced)
+							break;
+					}
+					if (is_try_synced) {
+						LogInfo("try syncG");
+						StartConnection();
+						SeedType seed[4];
+						CopyFromOriginalSeeds(seed);
+						for(int i=0;i<4;i++)
+							LogInfo(std::format("cur seed {}: {}", i, seed[i]));
+						return;
+					}
+				}
 			}
 		}
 		g_ui_frame++;
@@ -210,7 +339,7 @@ void ConnectLoop()
 		for(int i=0;i<g_connection.max_time_retry_timeout;i++)
 		{
 			g_connection.SendUDPPack(Data_StatePack(StatePack_State::Guest_Request));
-			for (int i = 0; i < g_connection.delay_compensation; i++)
+			for (int j = 0; j < g_connection.delay_compensation; j++)
 			{
 				Delay(16);
 				while (g_connection.RcvUDPPack() > 0);
@@ -260,7 +389,7 @@ HOST_COMFIRMING:
 		for (int i = 0; i < g_connection.max_time_retry_timeout; i++)
 		{
 			g_connection.SendUDPPack(Data_StatePack(StatePack_State::Host_State));
-			for (int i = 0; i < g_connection.delay_compensation; i++){
+			for (int j = 0; j < g_connection.delay_compensation; j++){
 				Delay(16);
 				while (g_connection.RcvUDPPack() > 0);
 				if (g_connection.connect_state == ConnectState::No_Connection)
@@ -478,12 +607,16 @@ int P2PConnection::SendUDPPack(Data_StatePack data)
 	else if (l_nLen > 0) {
 		switch (data.state)
 		{
+		case StatePack_State::Guest_Sync_Confirm:
+			LogInfo(std::format("[snded] {:<5} SGuestSyncCfm", pack.index)); break;
+		case StatePack_State::Host_Sync:
+			LogInfo(std::format("[snded] {:<5} SHostSync; {}|{}|{}|{}", pack.index, data.seednum[0], data.seednum[1], data.seednum[2], data.seednum[3])); break;
 		case StatePack_State::Guest_Confirm:
 			LogInfo(std::format("[snded] {:<5} SGuestCfm", pack.index)); break;
 		case StatePack_State::Guest_Request:
 			LogInfo(std::format("[snded] {:<5} SGuestReq", pack.index)); break;
 		case StatePack_State::Host_State:
-			LogInfo(std::format("[snded] {:<5} SHostStt", pack.index)); break;
+			LogInfo(std::format("[snded] {:<5} SHostStt; {}|{}|{}|{}", pack.index, data.seednum[0], data.seednum[1], data.seednum[2], data.seednum[3])); break;
 		case StatePack_State::Wait_State:
 			LogInfo(std::format("[snded] {:<5} SWAIT {}", pack.index,data.wait_frame)); break;
 		default:
@@ -519,12 +652,16 @@ int P2PConnection::RcvUDPPack()
 		Data_NAK_KeyState* pnak = std::get_if<Data_NAK_KeyState>(&(pack.data));
 		if (pst) {
 			switch (pst->state) {
+			case StatePack_State::Guest_Sync_Confirm:
+				LogInfo(std::format("[rcved] {:<5} RGuestSyncCfm", pack.index)); break;
+			case StatePack_State::Host_Sync:
+				LogInfo(std::format("[rcved] {:<5} RHostSync; {}|{}|{}|{}", pack.index, pst->seednum[0], pst->seednum[1], pst->seednum[2], pst->seednum[3])); break;
 			case StatePack_State::Guest_Confirm:
 				LogInfo(std::format("[rcved] {:<5} RGuestCfm", pack.index)); break;
 			case StatePack_State::Guest_Request:
 				LogInfo(std::format("[rcved] {:<5} RGuestReq", pack.index)); break;
 			case StatePack_State::Host_State:
-				LogInfo(std::format("[rcved] {:<5} RHostStt", pack.index)); break;
+				LogInfo(std::format("[rcved] {:<5} RHostStt; {}|{}|{}|{}", pack.index, pst->seednum[0], pst->seednum[1], pst->seednum[2], pst->seednum[3])); break;
 			case StatePack_State::Wait_State:
 				LogInfo(std::format("[rcved] {:<5} RWAIT", pack.index)); break;
 			default:
@@ -564,12 +701,14 @@ Data_StatePack::Data_StatePack(StatePack_State state)
 	default:
 	case StatePack_State::No_State:
 	case StatePack_State::Guest_Confirm:
+	case StatePack_State::Guest_Sync_Confirm:
 	case StatePack_State::Guest_Request:
 	case StatePack_State::Wait_State:
 		delay_compensation = g_connection.delay_compensation;
 		memset(cfg_flag, 0, sizeof(cfg_flag)); memset(seednum, 0, sizeof(seednum));
 		break;
 	case StatePack_State::Host_State:
+	case StatePack_State::Host_Sync:
 		CopyFromOriginalSeeds(seednum);
 		delay_compensation = g_connection.delay_compensation;
 		cfg_flag[0] = VALUED(0x00608644);

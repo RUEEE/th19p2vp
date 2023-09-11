@@ -11,7 +11,8 @@
 
 enum StatePack_State
 {
-	Host_State,No_State,Wait_State,Guest_Request,Guest_Confirm
+	Host_State,No_State,Wait_State,Guest_Request,Guest_Confirm,
+	Host_Sync,Guest_Sync_Confirm
 };
 
 struct Data_StatePack

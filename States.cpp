@@ -56,7 +56,13 @@ void __stdcall InitSelection()
 {
 	g_is_loading = false;
 }
+
 void __stdcall DestructPlayer()
+{
+	g_is_loading = true;
+}
+
+void __stdcall ResetPlayer()
 {
 	g_is_loading = true;
 }
@@ -69,4 +75,5 @@ void InjectSeedStates()
 	Hook((LPVOID)0x00505050, 6, InitStage);
 	Hook((LPVOID)0x0054443D, 5, InitSelection);
 	Hook((LPVOID)0x00504DB6, 7, DestructPlayer);
+	Hook((LPVOID)0x00532294, 11, ResetPlayer);
 }
