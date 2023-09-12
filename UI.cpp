@@ -112,7 +112,7 @@ void SetUI(IDirect3DDevice9* device)
         g_connection.SetGuestSocketSetting(addr, port, is_ipv6);
     }
     if (g_connection.is_addr_guest_sendto_set){
-        ImGui::LabelText(" ###Gip", "%s: %s, port: %d", g_connection.is_ipv6 ? "ipv6" : "ipv4", g_connection.addr_snedto.c_str(), g_connection.port_sendto);
+        ImGui::LabelText(" ###Gip", "%s: %s, port: %d", g_connection.is_ipv6 ? "ipv6" : "ipv4", g_connection.addr_sendto.c_str(), g_connection.port_sendto);
     }else{
         ImGui::LabelText(" ###Gip", "invalid ip address");
     }

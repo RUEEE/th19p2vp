@@ -468,14 +468,14 @@ bool P2PConnection::SetUpConnect_Guest()
 		socket_udp = socket(AF_INET6, SOCK_DGRAM, IPPROTO_UDP);
 		res_udp=bind(socket_udp, (SOCKADDR*)&(addr_self6), sizeof(addr_self6));
 
-		LogInfo(std::format("ipv6 Guest,to {} port: {}", this->addr_snedto,this->port_sendto));
+		LogInfo(std::format("ipv6 Guest,to {} port: {}", this->addr_sendto,this->port_sendto));
 	}else {//ipv4
 		
 		addr_self4 = { AF_INET, htons(port_send_Guest) };
 		socket_udp = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
 		res_udp = bind(socket_udp, (SOCKADDR*)&(addr_self4), sizeof(addr_self4));
 
-		LogInfo(std::format("ipv4 Guest,to {} port: {}", this->addr_snedto, this->port_sendto));
+		LogInfo(std::format("ipv4 Guest,to {} port: {}", this->addr_sendto, this->port_sendto));
 	}
 	if (res_udp != 0 || socket_udp ==INVALID_SOCKET) {
 		LogError(std::format("fail to create udp socket : {}", WSAGetLastError()));
@@ -650,7 +650,7 @@ bool P2PConnection::SetGuestSocketSetting(std::string host_ipaddress, int port_s
 		}
 		char buf[256] = { 0 };
 		inet_ntop(AF_INET6, &addr_other6.sin6_addr, buf, sizeof(buf));
-		addr_snedto = buf;
+		addr_sendto = buf;
 		port_sendto = port_sendto_Guest;
 	}else {//ipv4
 		addr_other4 = { AF_INET, htons(port_sendto_Guest) };
@@ -660,7 +660,7 @@ bool P2PConnection::SetGuestSocketSetting(std::string host_ipaddress, int port_s
 		}
 		char buf[256] = { 0 };
 		inet_ntop(AF_INET, &addr_other4.sin_addr, buf, sizeof(buf));
-		addr_snedto = buf;
+		addr_sendto = buf;
 		port_sendto = port_sendto_Guest;
 	}
 	
