@@ -67,9 +67,14 @@ struct P2PConnection
 	bool is_host;
 	bool is_ipv6;
 
-	char address[128];
-	int port_Host;
-	int port_Guest;
+	
+	int port_listen_Host;
+	int port_send_Guest;
+
+	bool is_addr_guest_sendto_set;
+	std::string addr_snedto;
+	int port_sendto;
+
 	bool is_blocking;
 
 	std::queue<Pack> packs_rcved;
@@ -77,8 +82,7 @@ struct P2PConnection
 		sockaddr_in6 addr_self6;
 		sockaddr_in addr_self4;
 	};
-	union
-	{
+	union{
 		sockaddr_in6 addr_other6;
 		sockaddr_in addr_other4;
 	};
@@ -88,7 +92,7 @@ struct P2PConnection
 	P2PConnection();
 
 	bool SetUpConnect_Guest();
-	bool SetUpConnect_Host();
+	bool SetUpConnect_Host(bool iis_ipv6);
 
 
 	void EndConnect();
@@ -101,6 +105,7 @@ struct P2PConnection
 	int SendUDPPack(Data_KeyState data);
 	int SendUDPPack(Data_NAK_KeyState data);
 	int SendUDPPack(Data_StatePack data);
+	bool SetGuestSocketSetting(std::string host_ipaddress, int port_sendto_Guest,bool iis_ipv6);
 };
 
 

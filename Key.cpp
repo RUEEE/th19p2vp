@@ -280,7 +280,7 @@ DWORD GetCurrentReceivedKey()
         {
             g_connection.SendUDPPack(Data_NAK_KeyState(g_ui_frame));
             LARGE_INTEGER time_begin;
-            QueryPerformanceCounter(&time_begin);
+            GetTime(&time_begin);
             while (true)
             {
                 HandlePacks();
@@ -291,7 +291,7 @@ DWORD GetCurrentReceivedKey()
                 if (g_connection.connect_state == ConnectState::No_Connection)
                     return 0;
                 LARGE_INTEGER time_cur;
-                QueryPerformanceCounter(&time_cur);
+                GetTime(&time_cur);
                 if (CalTimePeriod(time_begin, time_cur) > 16 * g_connection.delay_compensation)
                     break;
             }
@@ -423,7 +423,7 @@ void RecordKey(DWORD keyStruct, __int16* keyMapStruct)
 
 
 int __fastcall MyGetKeyState(DWORD thiz) {
-    QueryPerformanceCounter(&g_cur_time);
+    GetTime(&g_cur_time);
 
     //set control
     *(DWORD*)(0x0060860C) = 1;

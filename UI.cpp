@@ -39,7 +39,6 @@ struct UI_State
 }g_UI_State;
 
 
-
 void SetUI(IDirect3DDevice9* device)
 {
     static bool is_testGuest_open = false;
@@ -47,7 +46,7 @@ void SetUI(IDirect3DDevice9* device)
     static bool is_collapse = false;
 
     //ImGui::SetNextWindowSizeConstraints(ImVec2(320.0f, 200.0f), ImVec2(320.0f, 200.0f));
-    ImGui::SetNextWindowSize(ImVec2(365.0f, 175.0f));
+    ImGui::SetNextWindowSize(ImVec2(350.0f, 200.0f));
     ImGui::SetNextWindowPos(ImVec2(0.0f, 0.0f));
 
     ImGui::SetNextWindowCollapsed(is_collapse);
@@ -61,9 +60,9 @@ void SetUI(IDirect3DDevice9* device)
             ImGui::Begin("Desync Probably###wind", 0, ImGuiWindowFlags_::ImGuiWindowFlags_NoMove | ImGuiWindowFlags_::ImGuiWindowFlags_NoResize);
     }else{
         if(g_connection.is_ipv6)
-            ImGui::Begin("(ipv6) Waiting for P2###wind", 0, ImGuiWindowFlags_::ImGuiWindowFlags_NoMove | ImGuiWindowFlags_::ImGuiWindowFlags_NoResize);
+            ImGui::Begin("(ipv6) Waiting for 2P###wind", 0, ImGuiWindowFlags_::ImGuiWindowFlags_NoMove | ImGuiWindowFlags_::ImGuiWindowFlags_NoResize);
         else
-            ImGui::Begin("(ipv4) Waiting for P2###wind", 0, ImGuiWindowFlags_::ImGuiWindowFlags_NoMove | ImGuiWindowFlags_::ImGuiWindowFlags_NoResize);
+            ImGui::Begin("(ipv4) Waiting for 2P###wind", 0, ImGuiWindowFlags_::ImGuiWindowFlags_NoMove | ImGuiWindowFlags_::ImGuiWindowFlags_NoResize);
     }
     if (g_connection.connect_state == ConnectState::No_Connection){
         g_is_focus_ui = ImGui::IsWindowFocused();
@@ -74,82 +73,116 @@ void SetUI(IDirect3DDevice9* device)
     
     is_collapse=ImGui::IsWindowCollapsed();
 
-    SeedType seed[4];
-    CopyFromOriginalSeeds(seed);
-    ImGui::TextColored(ImVec4(0.3f,0.7f,0.6f,1.0f),"ver 1.01");
-    ImGui::SameLine();
-    ImGui::LabelText(" ", "t=%d; seed=(%d,%d,%d,%d)", g_ui_frame,seed[0],seed[1],seed[2],seed[3]);
-
-    ImGui::SetNextItemWidth(100.0f);
-    ImGui::InputText("Host IP  ", g_connection.address, sizeof(g_connection.address));
-
-    ImGui::SameLine();
-    ImGui::SetNextItemWidth(100.0f);
-    ImGui::InputInt("delay", &g_connection.delay_compensation, 1,5);
-    g_connection.delay_compensation = std::clamp(g_connection.delay_compensation, 1, 180);
-
     
-    ImGui::SetNextItemWidth(100.0f);
-    ImGui::InputInt("Host port", &g_connection.port_Host, 1);
-    g_connection.port_Host = std::clamp(g_connection.port_Host, 0, 65535);
-
-    ImGui::SameLine();
-    ImGui::SetNextItemWidth(100.0f);
-    ImGui::InputInt("Guest port", &g_connection.port_Guest, 1);
-    g_connection.port_Guest = std::clamp(g_connection.port_Guest, 0, 65535);
     
 
-    ImGui::Columns(2,0,false);
-    ImGui::SetColumnWidth(0, 150.0f);
-    ImGui::SetColumnWidth(1, 150.0f);
-
-  
-    if (ImGui::Button("start as Host")) {
-        g_connection.SetUpConnect_Host();
-        LogInfo("start as Host");
-        if(!g_is_log)
-            is_collapse = false;
+    static int delay = g_connection.delay_compensation;
+    ImGui::SetNextItemWidth(100.0f);
+    if (ImGui::InputInt("delay", &delay, 1, 5))
+    {
+        delay = std::clamp(delay, 1, 180);
+        if (g_connection.connect_state == ConnectState::No_Connection) {
+            g_connection.delay_compensation = delay;
+        }
+        else {
+            delay = g_connection.delay_compensation;
+        }
     }
-    ImGui::NextColumn();
-    if (ImGui::Button("start as Guest")){
-        g_connection.SetUpConnect_Guest();
-        LogInfo("start as Guest");
+    if (ImGui::Button("start as host(ipv6)")) {
+        g_connection.SetUpConnect_Host(true);
+        LogInfo("start as host(v6)");
         if (!g_is_log)
-            is_collapse = false;
+            is_collapse = true;
+    }
+    ImGui::SameLine();
+    if (ImGui::Button("start as host(ipv4)")) {
+        g_connection.SetUpConnect_Host(false);
+        LogInfo("start as host(v4)");
+        if (!g_is_log)
+            is_collapse = true;
+    }
+
+    ImGui::Separator();
+
+    ImGui::SetNextItemWidth(240.0f);
+    static char address[256];
+
+    if (ImGui::InputText("host IP", address, sizeof(address), g_connection.connect_state==ConnectState::No_Connection ? ImGuiInputTextFlags_::ImGuiInputTextFlags_None : ImGuiInputTextFlags_::ImGuiInputTextFlags_ReadOnly)){
+        auto [addr,port,is_ipv6] = get_addr_and_port(std::string(address));
+        g_connection.SetGuestSocketSetting(addr, port, is_ipv6);
+    }
+    if (g_connection.is_addr_guest_sendto_set){
+        ImGui::LabelText(" ###Gip", "%s: %s, port: %d", g_connection.is_ipv6 ? "ipv6" : "ipv4", g_connection.addr_snedto.c_str(), g_connection.port_sendto);
+    }else{
+        ImGui::LabelText(" ###Gip", "invalid ip address");
     }
     
-    ImGui::NextColumn();
+    if (ImGui::Button("start as guest")) {
+        g_connection.SetUpConnect_Guest();
+        LogInfo("start as guest");
+        if (!g_is_log)
+            is_collapse = true;
+    }
+
+
+    
+    ImGui::Separator();
     if (ImGui::Button("stop connection")) {
         g_connection.EndConnect();
     }
 
-    ImGui::Columns(1);
-    //ImGui::TextWrapped(g_log.c_str());
-    ImGui::Separator();
-    ImGui::SetNextItemWidth(50.0f);
-    if (ImGui::Button("show cmd")){    
-        AllocConsole();
+    ImGui::SameLine();
+    static bool adv_settings = false;
+    ImGui::Checkbox("advanced settings", &adv_settings);
+
+    if (adv_settings)
+    {
+        ImGui::SetNextWindowSize(ImVec2(250.0f, 160.0f));
+        ImGui::SetNextWindowPos(ImVec2(350.0f, 0.0f));
+        ImGui::Begin("advanced settings", 0, ImGuiWindowFlags_::ImGuiWindowFlags_NoMove | ImGuiWindowFlags_::ImGuiWindowFlags_NoResize);
+
+        SeedType seed[4];
+        CopyFromOriginalSeeds(seed);
+        ImGui::LabelText(" ###time", "t=%d", g_ui_frame);
+        ImGui::LabelText(" ###seed", "seed=(%d,%d,%d,%d)", g_ui_frame, seed[0], seed[1], seed[2], seed[3]);
+        ImGui::SetNextItemWidth(100.0f);
+        ImGui::InputInt("port for host", &g_connection.port_listen_Host, 1);
+        g_connection.port_listen_Host = std::clamp(g_connection.port_listen_Host, 0, 65535);
+
+        ImGui::SetNextItemWidth(100.0f);
+        ImGui::InputInt("port for guest", &g_connection.port_send_Guest, 1);
+        g_connection.port_send_Guest = std::clamp(g_connection.port_send_Guest, 0, 65535);
+
+        ImGui::Separator();
+        ImGui::SetNextItemWidth(50.0f);
+        if (ImGui::Button("show cmd")) {
+            AllocConsole();
 #pragma warning(push)
 #pragma warning(disable:4996)
 #pragma warning(disable:6031)
-        freopen("CONOUT$", "w", stdout);
-        std::ios::sync_with_stdio(0);
+            freopen("CONOUT$", "w", stdout);
+            std::ios::sync_with_stdio(0);
 #pragma warning(pop)
+        }
+        ImGui::SameLine();
+        ImGui::SetNextItemWidth(50.0f);
+        if (ImGui::Button("save log"))
+        {
+            std::fstream fs("latest.log", std::ios::ate | std::ios::out);
+            fs << g_log;
+            fs.close();
+            g_log = "";
+        }
+        ImGui::SameLine();
+        ImGui::SetNextItemWidth(50.0f);
+        ImGui::SameLine();
+        ImGui::SetNextItemWidth(50.0f);
+        ImGui::Checkbox("log", &g_is_log);
+
+        ImGui::End();
     }
-    ImGui::SameLine();
-    ImGui::SetNextItemWidth(50.0f);
-    if (ImGui::Button("save log"))
-    {
-        std::fstream fs("latest.log", std::ios::ate | std::ios::out);
-        fs << g_log;
-        fs.close();
-        g_log = "";
-    }
-    ImGui::SameLine();
-    ImGui::SetNextItemWidth(50.0f);
-    ImGui::SameLine();
-    ImGui::SetNextItemWidth(50.0f);
-    ImGui::Checkbox("log", &g_is_log);
+
+    ImGui::TextColored(ImVec4(0.3f, 0.7f, 0.6f, 1.0f), "ver 1.02");
     ImGui::End();
 
 

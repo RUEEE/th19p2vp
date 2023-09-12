@@ -15,6 +15,7 @@ bool g_is_synced = true;
 
 bool g_is_loading = false;
 
+
 void SetHostState(Data_StatePack statedata)
 {
 	CopyToOriginalSeeds(statedata.seednum);
@@ -24,8 +25,18 @@ void SetHostState(Data_StatePack statedata)
 	g_connection.delay_compensation = statedata.delay_compensation;
 }
 
-void StartConnection()
+void StartConnection(bool playSE)
 {
+	if (playSE){
+		__asm
+		{
+			push 0
+			push 15 // SE: 
+			mov ecx, 0x601E50
+			mov eax,0x4AEB20
+			call eax
+		}
+	}
 	g_is_synced = true;
 	g_connection.packs_rcved = {};
 	g_keystate_self = {};
@@ -50,7 +61,7 @@ void SendKeyStates(int frame)
 		sended_frame_udp = {};
 	}
 	LARGE_INTEGER cur_time;
-	QueryPerformanceCounter(&cur_time);
+	GetTime(&cur_time);
 	if (sended_frame_udp.contains(frame))
 	{
 		auto last_send_time = sended_frame_udp[frame];
@@ -146,7 +157,7 @@ void ConnectLoop()
 			{
 				g_connection.SendUDPPack(Data_NAK_KeyState(g_ui_frame));
 				LARGE_INTEGER time_begin;
-				QueryPerformanceCounter(&time_begin);
+				GetTime(&time_begin);
 				while (true){
 					HandlePacks();
 					if (g_keystate_rcved.contains(g_ui_frame)) {
@@ -156,7 +167,7 @@ void ConnectLoop()
 					if (g_connection.connect_state == ConnectState::No_Connection)
 						return;
 					LARGE_INTEGER time_cur;
-					QueryPerformanceCounter(&time_cur);
+					GetTime(&time_cur);
 					if (CalTimePeriod(time_begin, time_cur) > 16 * g_connection.delay_compensation)
 						break;
 				}
@@ -181,7 +192,7 @@ void ConnectLoop()
 		{
 			LARGE_INTEGER cur_time_try_sync;
 			static LARGE_INTEGER last_time_try_sync = { 0 };
-			QueryPerformanceCounter(&cur_time_try_sync);
+			GetTime(&cur_time_try_sync);
 			if (last_time_try_sync.QuadPart==0 || (CalTimePeriod(last_time_try_sync,cur_time_try_sync)>= g_connection.c_time_ms_retry_sync))//2000ms
 			{
 				LogInfo("try sync");
@@ -246,7 +257,7 @@ void ConnectLoop()
 					}
 					if (is_try_synced) {
 						LogInfo("try syncH");
-						StartConnection();
+						StartConnection(false);
 						SeedType seed[4];
 						CopyFromOriginalSeeds(seed);
 						for (int i = 0; i < 4; i++)
@@ -293,7 +304,7 @@ void ConnectLoop()
 					}
 					if (is_try_synced) {
 						LogInfo("try syncG");
-						StartConnection();
+						StartConnection(false);
 						SeedType seed[4];
 						CopyFromOriginalSeeds(seed);
 						for(int i=0;i<4;i++)
@@ -374,7 +385,7 @@ void ConnectLoop()
 			g_connection.SendUDPPack(Data_StatePack(StatePack_State::Guest_Confirm));
 			Delay(g_connection.delay_compensation * 8);
 			g_connection.connect_state = ConnectState::Connected;
-			StartConnection();
+			StartConnection(true);
 		}else{
 			LogError("time out when requesting");
 			g_connection.EndConnect();
@@ -419,7 +430,7 @@ HOST_COMFIRMING:
 		}
 		if (is_guest_confirmed) {
 			g_connection.connect_state = ConnectState::Connected;
-			StartConnection();
+			StartConnection(true);
 		}else {
 			LogError("time out when confirming");
 			g_connection.EndConnect();
@@ -431,12 +442,11 @@ HOST_COMFIRMING:
 }
 
 P2PConnection::P2PConnection():
-	port_Host(9961),port_Guest(9962), delay_compensation(3), 
+	port_listen_Host(10800),port_send_Guest(10801),port_sendto(c_no_port), delay_compensation(3),
 	is_host(true), is_ipv6(false),pack_index(0),is_blocking(false),
-	connect_state(ConnectState::No_Connection)
+	connect_state(ConnectState::No_Connection),is_addr_guest_sendto_set(false)
 {
-	// QueryPerformanceCounter(&last_init_value);
-	strcpy_s(address, "");
+	// GetTime(&last_init_value);
 	memset(&addr_self6, 0, sizeof(addr_self6));
 	memset(&addr_other6, 0, sizeof(addr_other6));
 	memset(&addr_self4, 0, sizeof(addr_self4));
@@ -444,28 +454,28 @@ P2PConnection::P2PConnection():
 	socket_udp = INVALID_SOCKET;
 }
 
+
+
 bool P2PConnection::SetUpConnect_Guest()
 {
 	if (this->connect_state != No_Connection)
 		return false;
 	is_host = false;
 	int res,res_udp;
-	if (strstr(address, ":") != NULL){
-		is_ipv6 = true;
-		addr_other6 = { AF_INET6, htons(port_Host) };
-		inet_pton(AF_INET6, address, &(addr_other6.sin6_addr));
-		addr_self6 = { AF_INET6, htons(port_Guest) };
+	if (is_ipv6){
+		
+		addr_self6 = { AF_INET6, htons(port_send_Guest) };
 		socket_udp = socket(AF_INET6, SOCK_DGRAM, IPPROTO_UDP);
 		res_udp=bind(socket_udp, (SOCKADDR*)&(addr_self6), sizeof(addr_self6));
-		LogInfo(std::format("ipv6 Guest,to {}", address));
+
+		LogInfo(std::format("ipv6 Guest,to {} port: {}", this->addr_snedto,this->port_sendto));
 	}else {//ipv4
-		is_ipv6 = false;
-		addr_other4 = { AF_INET, htons(port_Host) };
-		inet_pton(AF_INET, address, &(addr_other4.sin_addr));
-		addr_self4 = { AF_INET, htons(port_Guest) };
+		
+		addr_self4 = { AF_INET, htons(port_send_Guest) };
 		socket_udp = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
 		res_udp = bind(socket_udp, (SOCKADDR*)&(addr_self4), sizeof(addr_self4));
-		LogInfo(std::format("ipv4 Guest,to {}", address));
+
+		LogInfo(std::format("ipv4 Guest,to {} port: {}", this->addr_snedto, this->port_sendto));
 	}
 	if (res_udp != 0 || socket_udp ==INVALID_SOCKET) {
 		LogError(std::format("fail to create udp socket : {}", WSAGetLastError()));
@@ -478,21 +488,21 @@ bool P2PConnection::SetUpConnect_Guest()
 	return true;
 }
 
-bool P2PConnection::SetUpConnect_Host()
+bool P2PConnection::SetUpConnect_Host(bool iis_ipv6)
 {
 	if (this->connect_state != No_Connection)
 		return false;
 	is_host = true;
 	int res,res_udp;
-	if (strstr(address, ":") != NULL) {
+	if (iis_ipv6) {
 		is_ipv6 = true;
-		addr_self6 = { AF_INET6, htons(port_Host) };
+		addr_self6 = { AF_INET6, htons(port_listen_Host) };
 		socket_udp = socket(AF_INET6, SOCK_DGRAM, IPPROTO_UDP);
 		res_udp = bind(socket_udp, (SOCKADDR*)&(addr_self6), sizeof(addr_self6));
 		LogInfo(std::format("ipv6 Host"));
 	}else {//ipv4
 		is_ipv6 = false;
-		addr_self4 = { AF_INET, htons(port_Host) };
+		addr_self4 = { AF_INET, htons(port_listen_Host) };
 		socket_udp = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
 		res_udp = bind(socket_udp, (SOCKADDR*)&(addr_self4), sizeof(addr_self4));
 		LogInfo(std::format("ipv4 Host"));
@@ -519,10 +529,10 @@ void P2PConnection::EndConnect()
 		closesocket(socket_udp);
 		socket_udp = INVALID_SOCKET;
 	}
-	memset(&addr_self6, 0, sizeof(addr_self6));
-	memset(&addr_other6, 0, sizeof(addr_other6));
-	memset(&addr_self4, 0, sizeof(addr_self4));
-	memset(&addr_other4, 0, sizeof(addr_other4));
+	// memset(&addr_self6, 0, sizeof(addr_self6));
+	// memset(&addr_self4, 0, sizeof(addr_self4));
+	// memset(&addr_other6, 0, sizeof(addr_other6));
+	// memset(&addr_other4, 0, sizeof(addr_other4));
 	packs_rcved = std::queue<Pack>();
 }
 
@@ -624,6 +634,37 @@ int P2PConnection::SendUDPPack(Data_StatePack data)
 		}
 	}
 	return l_nLen;
+}
+
+bool P2PConnection::SetGuestSocketSetting(std::string host_ipaddress, int port_sendto_Guest, bool iis_ipv6)
+{
+	is_addr_guest_sendto_set = false;
+	if (port_sendto_Guest > 65535 || port_sendto_Guest < 0)
+		return false;
+	is_ipv6 = iis_ipv6;
+	if (is_ipv6) {
+		addr_other6 = { AF_INET6, htons(port_sendto_Guest) };
+		if (inet_pton(AF_INET6, host_ipaddress.c_str(), &(addr_other6.sin6_addr)) != 1) {
+			LogError("Wrong IP addr");
+			return false;
+		}
+		char buf[256] = { 0 };
+		inet_ntop(AF_INET6, &addr_other6.sin6_addr, buf, sizeof(buf));
+		addr_snedto = buf;
+		port_sendto = port_sendto_Guest;
+	}else {//ipv4
+		addr_other4 = { AF_INET, htons(port_sendto_Guest) };
+		if (inet_pton(AF_INET, host_ipaddress.c_str(), &(addr_other4.sin_addr)) != 1) {
+			LogError("Wrong IP addr");
+			return false;
+		}
+		char buf[256] = { 0 };
+		inet_ntop(AF_INET, &addr_other4.sin_addr, buf, sizeof(buf));
+		addr_snedto = buf;
+		port_sendto = port_sendto_Guest;
+	}
+	
+	is_addr_guest_sendto_set = true;
 }
 
 

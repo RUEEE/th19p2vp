@@ -33,26 +33,32 @@ int CalTimePeriod(LARGE_INTEGER start, LARGE_INTEGER end)
 	return ((end.QuadPart - start.QuadPart) * 1000 / (g_time_freq.QuadPart));
 }
 
+void GetTime(LARGE_INTEGER* t)
+{
+    QueryPerformanceCounter(t);
+    g_cur_time = *t;
+}
+
 
 void InitUtils()
 {
 	QueryPerformanceFrequency(&(g_time_freq));
-    QueryPerformanceCounter(&g_start_time);
+    GetTime(&g_start_time);
 }
 
 void Delay(int millisec)
 {
     LARGE_INTEGER start, end;
-    QueryPerformanceCounter(&start);
+    GetTime(&start);
     while (true){
-        QueryPerformanceCounter(&end);
+        GetTime(&end);
         int ms = ((end.QuadPart - start.QuadPart) * 1000 / (g_time_freq.QuadPart));
         if (ms >= millisec)
             break;
         if (millisec - ms >= 25)
             Sleep(5);
     }
-    QueryPerformanceCounter(&g_cur_time);
+    GetTime(&g_cur_time);
 }
 
 ImVec2 GetStageFromClient(ImVec2 client, ImVec2 client_sz, bool is_1P)
@@ -85,4 +91,63 @@ ImVec2 GetClientFromStage(ImVec2 stage, ImVec2 client_sz,bool is_1P)
     x /= 1920.0f;
     y /= 1440.0f;
     return ImVec2{ x * client_sz.x,y * client_sz.y };
+}
+
+bool test_is_ipv6(const std::string& addr)
+{
+    //ipv4: [xxx.xxx.xxx.xxx]:yyy
+    //ipv6: [xxx:xxx:...]:yyy
+    int count=0;
+    for (int i = 0; i < addr.size(); i++){
+        if (addr[i]==':')
+        {
+            count++;
+        }
+    }
+    return count>=2;//ipv4 only have 1 :
+}
+
+int s_stoi(const std::string& str,int default_int)
+{
+    int ret= default_int;
+    try{
+        ret = std::stoi(str);
+    }
+    catch (std::invalid_argument const& ex){
+        ret = default_int;
+    }
+    catch (std::out_of_range const& ex){
+        ret = default_int;
+    }
+    return ret;
+}
+
+
+std::tuple<std::string, int, bool> get_addr_and_port(const std::string& addr)
+{
+    if (addr.size() == 0)
+        return std::make_tuple("", c_no_port, false);
+    std::string addr_t = addr;
+    std::erase_if(addr_t, [](char c)->bool {return std::isspace(c); });
+
+    bool is_ipv6 = test_is_ipv6(addr_t);
+    int port = c_no_port;
+    std::string addr_str="";
+    if (is_ipv6){
+        auto index_l = addr_t.find_first_of('[');
+        auto index_r=addr_t.find_first_of(']');
+        if (index_r == std::string::npos || addr_t.size() < index_r + 2)
+            return std::make_tuple("", c_no_port, true);
+        std::string port_str = addr_t.substr(index_r + 2);
+        port = s_stoi(port_str,c_no_port);
+        addr_str = addr_t.substr(index_l + 1, index_r-index_l-1);
+    }else{
+        auto index_r = addr_t.find_first_of(':');
+        if (index_r == std::string::npos || addr_t.size() < index_r + 1)
+            return std::make_tuple("", c_no_port, false);
+        std::string port_str = addr_t.substr(index_r + 1);
+        port = s_stoi(port_str, c_no_port);
+        addr_str = addr_t.substr(0, index_r);
+    }
+    return std::make_tuple(addr_str, port, is_ipv6);
 }
