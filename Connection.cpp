@@ -460,23 +460,23 @@ P2PConnection::P2PConnection():
 
 void P2PConnection::LoadSettings()
 {
-    std::string host_ip = g_settings.GetHostIp();
+	std::string host_ip = g_settings.GetHostIp();
 
-    if (!host_ip.empty())
-    {
-        auto [addr,port,is_ipv6] = get_addr_and_port(host_ip);
-        g_connection.SetGuestSocketSetting(addr, port, is_ipv6);
-    }
+	if (!host_ip.empty())
+	{
+		auto [addr,port,is_ipv6] = get_addr_and_port(host_ip);
+		g_connection.SetGuestSocketSetting(addr, port, is_ipv6);
+	}
 
-    int delay = g_settings.GetDelayCompensation();
+	int delay = g_settings.GetDelayCompensation();
 
-    if (delay >= 0)
-    {
-        delay_compensation = delay;
-    }
+	if (delay >= 0)
+	{
+		delay_compensation = delay;
+	}
 
-    port_listen_Host = g_settings.GetHostPort();
-    port_send_Guest = g_settings.GetGuestPort();
+	port_listen_Host = g_settings.GetHostPort();
+	port_send_Guest = g_settings.GetGuestPort();
 }
 
 

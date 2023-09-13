@@ -5,18 +5,18 @@
 
 struct Settings
 {
-    INIReader* ini_reader = nullptr;
+	INIReader* ini_reader = nullptr;
 
-    Settings();
-    ~Settings();
-    
-    bool SettingsExists();
-    void LoadSettings();
+	Settings();
+	~Settings();
+	
+	bool SettingsExists();
+	void LoadSettings();
 
-    std::string GetHostIp();
-    int GetDelayCompensation();
-    int GetHostPort();
-    int GetGuestPort();
-    bool GetLogEnabled();
-    bool ShowConsole();
+	std::string GetHostIp();
+	int GetDelayCompensation();
+	int GetHostPort();
+	int GetGuestPort();
+	bool GetLogEnabled();
+	bool ShowConsole();
 };

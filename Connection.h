@@ -92,9 +92,9 @@ struct P2PConnection
 	int delay_compensation;
 	P2PConnection();
 
-    void LoadSettings();
+	void LoadSettings();
 
-    bool SetUpConnect_Guest();
+	bool SetUpConnect_Guest();
 	bool SetUpConnect_Host(bool iis_ipv6);
 
 
