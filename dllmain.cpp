@@ -5,13 +5,20 @@
 #include "Address.h"
 #include "imgui\imgui.h"
 #include "Connection.h"
+#include "Utils.h"
 
-extern "C" __declspec(dllexport)void func()
-{
 
+
+extern "C" {
+    __declspec(dllexport)void func()
+    {
+        return;
+    }
 }
 
 extern P2PConnection g_connection;
+bool g_is_inited = false;
+
 
 #define msg(x)  MessageBoxA(NULL, x, x, MB_OK);
 //#define msg(x);
@@ -23,22 +30,23 @@ BOOL APIENTRY DllMain(HMODULE hModule,
     switch (ul_reason_for_call)
     {
     case DLL_PROCESS_ATTACH:
+#ifndef  THCRAP
         ImGui::CreateContext();
         ImGui::StyleColorsLight();
-        HookWindow();
-        HookCreateMutex();
-        HookD3D();
         InjectAll();
+#endif
         break;
     case DLL_THREAD_ATTACH:
         break;
     case DLL_THREAD_DETACH:
         break;
     case DLL_PROCESS_DETACH:
-        g_connection.EndConnect();
-        WSACleanup();
-        unHook();
-        terminate();
+        if (g_is_inited) {
+            g_connection.EndConnect();
+            WSACleanup();
+            unHook();
+            terminate();
+        }
         break;
     }
     return TRUE;

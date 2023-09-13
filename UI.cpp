@@ -182,7 +182,7 @@ void SetUI(IDirect3DDevice9* device)
         ImGui::End();
     }
 
-    ImGui::TextColored(ImVec4(0.3f, 0.7f, 0.6f, 1.0f), "ver 1.02");
+    ImGui::TextColored(ImVec4(0.3f, 0.7f, 0.6f, 1.0f), "ver 1.03");
     ImGui::End();
 
 

@@ -23,122 +23,10 @@ std::unordered_map<int, KeyState> g_keystate_self;
 std::unordered_map<int, KeyState> g_keystate_rcved;
 extern bool g_is_loading;
 
-/*
-bool IsInGame()
-{
-    return *(DWORD*)(0x005AE474) && g_cur_frame <= 2 * g_connection.delay_compensation && g_real_frame;
-}
-
-bool IsLoading()
-{
-    return *(DWORD*)(0x005AE474) && (g_real_frame==0);
-}
-
-
-void InitGameValue()
-{
-    LogInfo("init game value");
-    if (g_cur_frame != g_connection.delay_compensation)
-    {
-        g_cur_frame = g_connection.delay_compensation;
-        g_seed_numA = 0;
-        g_seed_numB = 0;
-        g_keystate_self.clear();
-        g_keystate_rcved.clear();
-        for (int i = 0; i < g_connection.delay_compensation; i++) {
-            g_keystate_self.emplace(i, KeyState{ .frame = i,.state = 0 });
-            g_keystate_rcved.emplace(i, KeyState{ .frame = i,.state = 0 });
-        }
-    }
-}
-
-void EnterGame()
-{
-    InitGameValue();
-}
-*/
-
-/*
-DWORD __fastcall Original_GetRng(DWORD* thiz)
-{
-    unsigned int v2; // edi
-    int v3; // ebx
-    thiz[1] += 2;
-    v2 = (unsigned __int16)((*(WORD*)thiz ^ 0x9630) - 25939);
-    v3 = (unsigned __int16)(((4 * v2 + (v2 >> 14)) ^ 0x9630) - 25939);
-    *(WORD*)thiz = 4 * v3 + ((unsigned __int16)(((4 * v2 + (v2 >> 14)) ^ 0x9630) - 25939) >> 14);
-    return v3 | (v2 << 16);
-}
-
-std::default_random_engine g_random_engineA(0);
-std::default_random_engine g_random_engineB(0);
-std::default_random_engine g_random_engineC(0);
-std::uniform_int_distribution<unsigned int> g_uint_device(0,4294967295);
-
-
-DWORD __fastcall GetRng(DWORD thiz)
-{
-    // *(DWORD*)(thiz + 4) += 2;
-    // LogInfo(std::format("RNGD for {};{}+{}+({},{})",thiz,        g_connection.seednum0, g_real_frame, g_seed_numA, g_seed_numB));
-    // if (thiz == 0x005AE410) {
-    //     return std::hash<int>()(g_connection.seednum0 + g_real_frame + ((++g_seed_numA * 114 + 514) ^ 0x1919810) * 114514);
-    // }else if (thiz == 0x005AE420) {
-    //     return std::hash<int>()(g_connection.seednum0 + g_real_frame + ((++g_seed_numB * 114 + 514) ^ 0x1919810) * 114514);
-    // }else{
-    //     return std::hash<int>()(g_connection.seednum0 + g_real_frame + ((g_seed_numB * 114 + 514) ^ 0x1919810) * 114514);
-    // }
-    return Original_GetRng((DWORD*)thiz);
-}
-
-SHORT __fastcall GetRng2(DWORD thiz)
-{
-    // *(DWORD*)(thiz + 4) += 1;
-    // LogInfo(std::format("RNGS for {};{}+{}+({},{})", thiz, g_connection.seednum0, g_real_frame, g_seed_numA, g_seed_numB));
-    // if (thiz == 0x005AE410) {
-    //     return std::hash<int>()(g_connection.seednum0 + g_real_frame + ((++g_seed_numA * 114 + 514) ^ 0x1919810) * 114514);
-    // }else if (thiz == 0x005AE420) {
-    //     return std::hash<int>()(g_connection.seednum0 + g_real_frame + ((++g_seed_numB * 114 + 514) ^ 0x1919810) * 114514);
-    // }else {
-    //     return std::hash<int>()(g_connection.seednum0 + g_real_frame + ((g_seed_numB * 114 + 514) ^ 0x1919810) * 114514);
-    // }
-}
-*/
-
-/*
-void __fastcall PlayerState(DWORD ecx)
-{
-    if(ecx==*(DWORD*)(0x005AE474)){
-        if (g_real_frame == 0){
-            EnterGame();
-        }
-        g_real_frame++;
-        g_seed_numA = 0;
-        g_seed_numB = 0;
-    }
-}
-
-void SetPlayer()
-{
-    if (*(DWORD*)(0x005AE4B0) == 0)
-    {
-        //g_connection.seednum0++;
-        g_real_frame = 0;
-        g_seed_numA = 0;
-        g_seed_numB = 0;
-    }
-}
-
-void SetLife2()
-{
-    g_real_frame = 0;
-    g_seed_numA = 0;
-    g_seed_numB = 0;
-}
-*/
 
 bool IsOnWindow()
 {
-    return Address<BYTE>(0x609178).GetValue() && (!g_is_focus_ui);
+    return Address<BYTE>(GetAddress(0x609178)).GetValue() && (!g_is_focus_ui);
 }
 
 DWORD GetKeyStateFull_original(DWORD keyStruct, __int16* keyMapStruct)
@@ -218,7 +106,7 @@ DWORD GetKeyStateGamePad_original(DWORD keyStruct, __int16* keyMapStruct, XINPUT
     DWORD v10 = v9 | 1;
     DWORD v11, v12, v13, v14;
     {
-        DWORD* dword_5743E8 = (DWORD*)(0x5743E8);
+        DWORD* dword_5743E8 = (DWORD*)(GetAddress(0x5743E8));
         if ((kst & dword_5743E8[keyMapStruct[9]]) == 0)
             v10 = v9;
         v11 = v10 | 2;
@@ -426,9 +314,9 @@ int __fastcall MyGetKeyState(DWORD thiz) {
     GetTime(&g_cur_time);
 
     //set control
-    *(DWORD*)(0x0060860C) = 1;
-    *(DWORD*)(0x00608610) = 2;
-    DWORD control_option = VALUED(0x005AE3A0);
+    *(DWORD*)(GetAddress(0x0060860C)) = 1;
+    *(DWORD*)(GetAddress(0x00608610)) = 2;
+    DWORD control_option = VALUED(GetAddress(0x005AE3A0));
 
     if (control_option)
     {
@@ -475,9 +363,9 @@ int __fastcall MyGetKeyState(DWORD thiz) {
     v31 = thiz + 720;
     memset((void*)(thiz + 720), 0, 0x100u);
     v3 = 0;
-    if (*(DWORD*)(Address<DWORD>(0x5AE3A0).GetValue() + 0x2E28) == *(DWORD*)(v1 + 4))
+    if (*(DWORD*)(Address<DWORD>(GetAddress(0x5AE3A0)).GetValue() + 0x2E28) == *(DWORD*)(v1 + 4))
         v3 = 90;
-    v4 = (__int16*)(v3 + Address<DWORD>(0x5AE3A0).GetValue() + 0x2E38);
+    v4 = (__int16*)(v3 + Address<DWORD>(GetAddress(0x5AE3A0)).GetValue() + 0x2E38);
 
 
     if (g_connection.connect_state == ConnectState::Connected){
@@ -514,8 +402,8 @@ int __fastcall MyGetKeyState(DWORD thiz) {
                         break;
                     if (v18 != -2147024866) {
                         void(__fastcall * sub_402310)(DWORD thiz, int a2);
-                        sub_402310 = (decltype(sub_402310))(0x402310);
-                        sub_402310(0x607728, 15);
+                        sub_402310 = (decltype(sub_402310))(GetAddress(0x402310));
+                        sub_402310(GetAddress(0x607728), 15);
                         return 0;
                     }
                 }
@@ -527,8 +415,8 @@ int __fastcall MyGetKeyState(DWORD thiz) {
         {
         LABEL_70:
             void(__fastcall * sub_402310)(DWORD thiz, int a2);
-            sub_402310 = (decltype(sub_402310))(0x402310);
-            sub_402310(0x607728, 15);
+            sub_402310 = (decltype(sub_402310))(GetAddress(0x402310));
+            sub_402310(GetAddress(0x607728), 15);
             return 0;
         }
         if (*v4 >= 0)
@@ -546,19 +434,19 @@ int __fastcall MyGetKeyState(DWORD thiz) {
         if (v23 >= 0)
             v2 |= (*((unsigned __int8*)&v35[12] + v23) >> 4) & 8;
         v24 = 0;
-        if (v35[0] < -Address<WORD>(0x608614).GetValue())
+        if (v35[0] < -Address<WORD>(GetAddress(0x608614)).GetValue())
             v24 = 64;
         v33 = v24;
         v25 = 0;
-        if (v35[1] < -Address<WORD>(0x608616).GetValue())
+        if (v35[1] < -Address<WORD>(GetAddress(0x608616)).GetValue())
             v25 = 16;
         v26 = 0;
         v34 = v25 | v33;
-        if (v35[0] > Address<WORD>(0x608614).GetValue())
+        if (v35[0] > Address<WORD>(GetAddress(0x608614)).GetValue())
             v26 = 128;
         v27 = v26 | v34;
         v28 = 0;
-        if (v35[1] > Address<WORD>(0x608616).GetValue())
+        if (v35[1] > Address<WORD>(GetAddress(0x608616)).GetValue())
             v28 = 32;
         v2 |= v28 | v27;
         for (i = 0; i < 32; ++i)
@@ -569,18 +457,18 @@ int __fastcall MyGetKeyState(DWORD thiz) {
         v1 = thiz;
     LABEL_94:
         if (v2)
-            *(DWORD*)(Address<DWORD>(0x5AE3A0).GetValue() + 24) = *(DWORD*)v1;
+            *(DWORD*)(Address<DWORD>(GetAddress(0x5AE3A0)).GetValue() + 24) = *(DWORD*)v1;
     LABEL_96:
         *(DWORD*)(v1 + 20) = *(DWORD*)(v1 + 16);
         *(DWORD*)(v1 + 16) = v2;
 
         void(__fastcall * sub_402730)(unsigned int* thiz);
-        sub_402730 = (decltype(sub_402730))(0x402730);
+        sub_402730 = (decltype(sub_402730))(GetAddress(0x402730));
         sub_402730((unsigned int*)(v1 + 16));
-        if (Address<BYTE>(0x6078B8).GetValue())
+        if (Address<BYTE>(GetAddress(0x6078B8)).GetValue())
         {
-            LeaveCriticalSection((LPCRITICAL_SECTION)0x607890);
-            Address<BYTE>(0x6078B7).SetValue(Address<BYTE>(0x6078B7).GetValue());
+            LeaveCriticalSection((LPCRITICAL_SECTION)GetAddress(0x607890));
+            Address<BYTE>(GetAddress(0x6078B7)).SetValue(Address<BYTE>(GetAddress(0x6078B7)).GetValue());
         }
         return v2;
     case 2:
@@ -618,7 +506,7 @@ int __fastcall MyGetKeyState(DWORD thiz) {
             v9 = v8;
         v10 = v9 | 1;
         {
-            DWORD* dword_5743E8 = (DWORD*)(0x5743E8);
+            DWORD* dword_5743E8 = (DWORD*)(GetAddress(0x5743E8));
             if ((v6 & dword_5743E8[v4[9]]) == 0)
                 v10 = v9;
             v11 = v10 | 2;

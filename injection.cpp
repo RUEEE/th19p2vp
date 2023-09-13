@@ -14,6 +14,10 @@
 #include <d3d9.h>
 #include <d3dx9.h>
 
+
+#include "States.h"
+
+
 void Assert(const WCHAR* s)
 {
     MessageBox(NULL, s, L"warning", MB_OK);
@@ -216,10 +220,6 @@ IDirect3D9* WINAPI MyDirect3DCreate9(UINT SDKVersion)
     return g_d3d9;
 }
 
-void HookD3D()
-{
-    hookIAT(GetModuleHandle(NULL), "d3d9.dll", "Direct3DCreate9", MyDirect3DCreate9, (void**)&RealDirect3DCreate9);
-}
 
 BOOL CALLBACK EnumWindowsProc(HWND hwnd, LPARAM lParam)
 {
@@ -340,14 +340,10 @@ HANDLE WINAPI MyCreateMutexW(LPSECURITY_ATTRIBUTES se, BOOL initialOwner, LPCWST
 }
 
 
-void HookWindow()
-{
-    hookIAT(GetModuleHandle(NULL), "user32.dll", "CreateWindowExW", MyCreateWindowExW, (void**)&RealCreateWindowExW);
-    // hookIAT(GetModuleHandle(NULL), "gdi32.dll", "TextOutW", MyTextOutW, (void**)&RealTextOutW);
-}
 
 void unHook()
 {
+#ifndef THCRAP
     if (g_is_hooked)
     {
         g_is_hooked = false;
@@ -357,32 +353,106 @@ void unHook()
         unhookVTable(g_device, 17, RealPresent);
         SetWindowLongW(g_wnd_hwnd, GWL_WNDPROC, (LONG)g_oldWndProc);
     }
+#else
+    ImGui_ImplDX9_Shutdown();
+    ImGui_ImplWin32_Shutdown();
+    ImGui::DestroyContext();
+    unhookVTable(g_device, 17, RealPresent);
+#endif
 }
 
-#include "States.h"
-//#define msg(x)  MessageBoxA(NULL, x, x, MB_OK);
-#define msg(x)
+
+
+#ifdef THCRAP
+HWND WINAPI MyTHCrapCreateWindowExW(DWORD dwExStyle
+    , LPCWSTR lpClassName
+    , LPCWSTR  lpWindowName
+    , DWORD dwStyle
+    , int X, int Y, int nWidth, int nHeight
+    , HWND hWndParent, HMENU hMenu, HINSTANCE hInstance, LPVOID lpParam)
+{
+    HWND hw = CreateWindowExW(dwExStyle, lpClassName, lpWindowName, dwStyle, X, Y, nWidth, nHeight,
+        hWndParent, hMenu, hInstance, lpParam);
+    unhookIAT(GetModuleHandle(NULL), "user32.dll", "CreateWindowExW");
+    ImGui_ImplWin32_Init(hw);
+    g_wnd_hwnd = hw;
+    g_oldWndProc = (WNDPROC)SetWindowLongW(g_wnd_hwnd, GWL_WNDPROC, (LONG)MyWndProc);
+    return hw;
+}
+HANDLE WINAPI MyTHCrapCreateMutexW(LPSECURITY_ATTRIBUTES se, BOOL initialOwner, LPCWSTR name)
+{
+    HANDLE Ret = CreateMutexW(se, initialOwner, name);
+    auto err = GetLastError();
+    if (err != ERROR_ALREADY_EXISTS) {
+        SetLastError(err);
+        return Ret;
+    }
+    auto boxRet = MessageBoxW(NULL, L"th19.exe still alive, use task manager to kill the exe,\n click YES to open process anyway", L"warning(touhou mod dll)", MB_YESNO);
+    if (boxRet == IDNO) {
+        SetLastError(ERROR_ALREADY_EXISTS);
+    }else {
+        SetLastError(0);
+    }
+    return Ret;
+}
+IDirect3D9* WINAPI MyTHCrapDirect3DCreate9(UINT SDKVersion)
+{
+    //hook
+    g_d3d9 = Direct3DCreate9(SDKVersion);
+    hookVTable(g_d3d9, 16, MyCreateDevice, (void**)&RealCreateDevice); // CreateDevice是IDirect3D9第17个函数
+    return g_d3d9;
+}
+#endif
+extern bool g_is_inited;
+#ifdef THCRAP
+extern "C"
+{
+    __declspec(dllexport)int thcrap_plugin_init() {
+        char* ch = fn_for_game("th19pv2p");
+        if (strcmp(ch, "th19/th19pv2p") != 0){
+            free(ch);
+            return 1;
+        }
+        free(ch);
+        ImGui::CreateContext();
+        ImGui::StyleColorsLight();
+        InjectAll();
+        return 0;
+    }
+}
+#endif
+
+
 void InjectAll()
 {
-     HookCall((LPVOID)0x004ABAB2, MyGetKeyState);
+    g_is_inited = true;
+#ifndef THCRAP
+    hookIAT(GetModuleHandle(NULL), "user32.dll", "CreateWindowExW", MyCreateWindowExW, (void**)&RealCreateWindowExW);
+    hookIAT(GetModuleHandle(NULL), "Kernel32.dll", "CreateMutexW", MyCreateMutexW, (void**)&RealCreateMutexW);
+    hookIAT(GetModuleHandle(NULL), "d3d9.dll", "Direct3DCreate9", MyDirect3DCreate9, (void**)&RealDirect3DCreate9);
+#else
+    //int (*detour_chain)(const char* dll_name, int return_old_ptrs, ...);
+    //detour_chain = (decltype(detour_chain))GetProcAddress(hinstLib, "MyFunction");
+
+    detour_chain("user32.dll", 1,
+        "CreateWindowExW", MyTHCrapCreateWindowExW, &RealCreateWindowExW,
+        NULL
+    );
+    detour_chain("Kernel32.dll", 1,
+        "CreateMutexW", MyTHCrapCreateMutexW, &RealCreateMutexW,
+        NULL
+    );
+    detour_chain("d3d9.dll", 1,
+        "Direct3DCreate9", MyTHCrapDirect3DCreate9, &RealDirect3DCreate9,
+        NULL
+    );
+#endif
+     HookCall((LPVOID)GetAddress(0x004ABAB2), MyGetKeyState);
      InitUtils();
      P2PConnection::WSAStartUp();
      InjectSeedStates();
 
-     Hook((LPVOID)0x4BF280, 6, ConnectLoop_L);
-
-     // Address<BYTE>(0x402C00).SetValue(0xE9);
-     // Address<DWORD>(0x402C01).SetValue((DWORD)(GetRng)-0x402C00-5);
-     // 
-     // Address<BYTE>(0x402340).SetValue(0xE9);
-     // Address<DWORD>(0x402341).SetValue((DWORD)(GetRng2)-0x402340-5);
-     
-     //Hook((LPVOID)0x00505688, 7, SetLife);
-     //Hook((LPVOID)0x0053239F, 7, SetPlayer);
-     //Hook((LPVOID)0x00501F9D, 5, SetLife2);
-     //Hook((LPVOID)0x0042A1F7, 6, PlayerMove);
-
-
+     Hook((LPVOID)GetAddress(0x004BF280), 6, ConnectLoop_L);
 
     //default menu
 
@@ -393,24 +463,19 @@ void InjectAll()
     // 53FEE2 -> 31 C0 40 90 90 (->P2)
     // 4D4021 -> B9 01 00 00 00 90 90 90 (->card)
     
-    Address<BYTE>(0x00542313).SetValue(0x0);
+    Address<BYTE>(GetAddress(0x00542313)).SetValue(0x0);
     
-    Address<WORD>(0x542077).SetValue(0x006A);
-    Address<DWORD>(0x542079).SetValue(0x90909090);
+    Address<WORD>(GetAddress(0x542077)).SetValue(0x006A);
+    Address<DWORD>(GetAddress(0x542079)).SetValue(0x90909090);
     
-    Address<WORD>(0x54247D).SetValue(0x036A);
-    Address<DWORD>(0x54247F).SetValue(0x90909090);
+    Address<WORD>(GetAddress(0x54247D)).SetValue(0x036A);
+    Address<DWORD>(GetAddress(0x54247F)).SetValue(0x90909090);
     
-    Address<WORD>(0x53FE0E).SetValue(0xC031);
-    Address<BYTE>(0x53FEE2).SetValue(0x31);
-    Address<DWORD>(0x53FEE3).SetValue(0x909040C0);
+    Address<WORD>(GetAddress(0x53FE0E)).SetValue(0xC031);
+    Address<BYTE>(GetAddress(0x53FEE2)).SetValue(0x31);
+    Address<DWORD>(GetAddress(0x53FEE3)).SetValue(0x909040C0);
     
-    Address<DWORD>(0x4D4021).SetValue(0x000001B9);
-    Address<DWORD>(0x4D4025).SetValue(0x90909000);
+    Address<DWORD>(GetAddress(0x4D4021)).SetValue(0x000001B9);
+    Address<DWORD>(GetAddress(0x4D4025)).SetValue(0x90909000);
 }
 
-
-void HookCreateMutex()
-{
-    hookIAT(GetModuleHandle(NULL), "Kernel32.dll", "CreateMutexW", MyCreateMutexW, (void**)&RealCreateMutexW);
-}

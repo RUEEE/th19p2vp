@@ -15,6 +15,7 @@ void Delay(int millisec);
 
 ImVec2 GetStageFromClient(ImVec2 client, ImVec2 client_sz, bool is_1P);
 ImVec2 GetClientFromStage(ImVec2 stage, ImVec2 client_sz, bool is_1P);
+DWORD GetAddress(DWORD Addr_noALSR);
 
 constexpr int c_no_port = -1;
 bool test_is_ipv6(const std::string& addr);

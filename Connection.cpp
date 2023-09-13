@@ -19,21 +19,21 @@ bool g_is_loading = false;
 void SetHostState(Data_StatePack statedata)
 {
 	CopyToOriginalSeeds(statedata.seednum);
-	VALUED(0x00608644) = statedata.cfg_flag[0];
-	VALUED(0x00608648) = statedata.cfg_flag[1];
-	VALUED(0x0060864C) = statedata.cfg_flag[2];
+	CopyToCustomSetting(statedata.cfg_flag);
 	g_connection.delay_compensation = statedata.delay_compensation;
 }
 
 void StartConnection(bool playSE)
 {
 	if (playSE){
+		DWORD addr_thiz = GetAddress(0x00601E50);
+		DWORD addr_func_playSE = GetAddress(0x004AEB20);
 		__asm
 		{
 			push 0
 			push 15 // SE: 
-			mov ecx, 0x601E50
-			mov eax,0x4AEB20
+			mov ecx, addr_thiz
+			mov eax, addr_func_playSE
 			call eax
 		}
 	}
@@ -188,7 +188,7 @@ void ConnectLoop()
 			}
 		}
 
-		if (g_is_synced == false && (VALUED(0x005AE474)==0) && (VALUED(0x005AE624)!=0))//not in-game desync
+		if (g_is_synced == false && (VALUED(GetAddress(0x005AE474))==0) && (VALUED(GetAddress(0x005AE624))!=0))//not in-game desync
 		{
 			LARGE_INTEGER cur_time_try_sync;
 			static LARGE_INTEGER last_time_try_sync = { 0 };
@@ -752,9 +752,7 @@ Data_StatePack::Data_StatePack(StatePack_State state)
 	case StatePack_State::Host_Sync:
 		CopyFromOriginalSeeds(seednum);
 		delay_compensation = g_connection.delay_compensation;
-		cfg_flag[0] = VALUED(0x00608644);
-		cfg_flag[1] = VALUED(0x00608648);
-		cfg_flag[2] = VALUED(0x0060864C);
+		CopyFromCustomSetting(cfg_flag);
 		break;
 	}
 }

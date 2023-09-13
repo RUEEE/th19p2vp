@@ -39,9 +39,15 @@ void GetTime(LARGE_INTEGER* t)
     g_cur_time = *t;
 }
 
+DWORD GetAddress(DWORD Addr_noALSR)
+{
+    static DWORD hookModuleBase = (DWORD)GetModuleHandle(NULL);
+    return Addr_noALSR - 0x00400000 + hookModuleBase;
+}
 
 void InitUtils()
 {
+    
 	QueryPerformanceFrequency(&(g_time_freq));
     GetTime(&g_start_time);
 }

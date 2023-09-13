@@ -4,15 +4,21 @@ A tool for th19 P2P pvp
 
 ## Installation
 
-Download the zip file from the [releases](https://github.com/RUEEE/th19p2vp/releases) page, and unzip it on top of the original game folder. Please make a backup of the game folder before you do this so you can restore it later.
+### With THCrap
+
+Download the zip file from the [releases](https://github.com/RUEEE/th19p2vp/releases) page, and unzip it, then copy  ```\with_thcrap\th19p2vp.dll``` into ```thcrap\bin``` folder.
+
+### Without THCrap
+
+Download the zip file from the [releases](https://github.com/RUEEE/th19p2vp/releases) page, and unzip it, then copy all thing in ```\without_thcrap\```  folder to the top of the original game folder. Please make a backup of the game folder before you do this so you can restore it later.
 
 When playing with others, make sure you are using the same version of this patch.
 
 ## Getting Started
 
-Before starting the game, it's recommended to make sure the host's and guest's game options are the same (e.g. VS mode selection, keyboard settings...)
+Before starting the game, it's recommended to **make sure the host's and guest's game options are the same** (e.g. VS mode selection, keyboard settings...)
 
-When you start the game, to avoid desyncs, don't move around in the menu, immediately begin the process of connection.
+When you start the game, to avoid desyncs, **don't move around in the menu**, immediately begin the process of connection.
 
 When the game opens, you should see a small white window in the top left corner that allows you to configure the connection. If you don't see it, the patch was not installed properly.
 
@@ -73,15 +79,19 @@ Click show cmd will show the cmd console (it may cause lag when logging)
 
 ## Bugs and Known Problems
 
-** since i only have keyboard, the gamepad control might be buggy(**
+**since i only have keyboard, the gamepad control might be buggy(**
 
 
 ## Updates
 
-23/09/12
+1.03 (23/09/13)
+
+​	thcrap support, game without ALSR support
+
+1.02 (23/09/12)
 	changed UI, make it easier to use
 
-23/09/11
+1.01 (23/09/11)
 	make patch try to resync when the game desyncs and is not in game
 	changes UI slightly
 	
