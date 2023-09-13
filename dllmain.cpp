@@ -40,7 +40,6 @@ BOOL APIENTRY DllMain(HMODULE hModule,
 
         // Load settings
         g_settings.LoadSettings();
-        SetDataFromSettingsIntoUI();
 #endif
         break;
     case DLL_THREAD_ATTACH:
