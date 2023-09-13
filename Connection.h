@@ -72,7 +72,7 @@ struct P2PConnection
 	int port_send_Guest;
 
 	bool is_addr_guest_sendto_set;
-	std::string addr_snedto;
+	std::string addr_sendto;
 	int port_sendto;
 
 	bool is_blocking;
