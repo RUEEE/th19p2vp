@@ -5,6 +5,8 @@
 #include "Address.h"
 #include "imgui\imgui.h"
 #include "Connection.h"
+#include "Settings.h"
+#include "UI.h"
 #include "Utils.h"
 
 
@@ -17,6 +19,7 @@ extern "C" {
 }
 
 extern P2PConnection g_connection;
+extern Settings g_settings;
 bool g_is_inited = false;
 
 
@@ -34,6 +37,10 @@ BOOL APIENTRY DllMain(HMODULE hModule,
         ImGui::CreateContext();
         ImGui::StyleColorsLight();
         InjectAll();
+
+        // Load settings
+        g_settings.LoadSettings();
+        SetDataFromSettingsIntoUI();
 #endif
         break;
     case DLL_THREAD_ATTACH:

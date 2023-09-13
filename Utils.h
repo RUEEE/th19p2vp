@@ -21,6 +21,8 @@ constexpr int c_no_port = -1;
 bool test_is_ipv6(const std::string& addr);
 std::tuple<std::string, int, bool> get_addr_and_port(const std::string& addr);
 
+void AllocAndShowConsole();
+
 #define VALUED(x)  (*(DWORD*)(x))
 #define VALUEF(x)  (*(float*)(x))
 #define VALUEW(x)  (*(WORD*)(x))

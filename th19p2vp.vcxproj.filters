@@ -19,6 +19,12 @@
     <Filter Include="3rdparty\imgui">
       <UniqueIdentifier>{d05455c7-b260-47c0-9ab9-fbe00fbbfdd0}</UniqueIdentifier>
     </Filter>
+    <Filter Include="3rdparty\inih">
+      <UniqueIdentifier>{418a2b47-93b5-4901-9ffa-f92f2ca1c826}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="3rdparty\inih\cpp">
+      <UniqueIdentifier>{fb70ba55-b7fc-49df-bb3b-55590cad7da4}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="framework.h">
@@ -51,6 +57,12 @@
     <ClInclude Include="imgui\imconfig.h">
       <Filter>3rdparty\imgui</Filter>
     </ClInclude>
+    <ClInclude Include="inih\ini.h">
+      <Filter>3rdparty\inih</Filter>
+    </ClInclude>
+    <ClInclude Include="inih\cpp\INIReader.h">
+      <Filter>3rdparty\inih\cpp</Filter>
+    </ClInclude>
     <ClInclude Include="Address.h">
       <Filter>头文件</Filter>
     </ClInclude>
@@ -73,6 +85,9 @@
       <Filter>头文件</Filter>
     </ClInclude>
     <ClInclude Include="THCRAP.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="Settings.h">
       <Filter>头文件</Filter>
     </ClInclude>
   </ItemGroup>
@@ -121,6 +136,15 @@
     </ClCompile>
     <ClCompile Include="States.cpp">
       <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="Settings.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="inih\cpp\INIReader.cpp">
+      <Filter>3rdparty\inih\cpp</Filter>
+    </ClCompile>
+    <ClCompile Include="inih\ini.c">
+      <Filter>3rdparty\inih</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

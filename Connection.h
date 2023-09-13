@@ -5,6 +5,7 @@
 #include <variant>
 #include <queue>
 #include "Key.h"
+#include "inih/cpp/INIReader.h"
 #pragma comment(lib,"ws2_32.lib")
 
 
@@ -91,7 +92,9 @@ struct P2PConnection
 	int delay_compensation;
 	P2PConnection();
 
-	bool SetUpConnect_Guest();
+    void LoadSettings();
+
+    bool SetUpConnect_Guest();
 	bool SetUpConnect_Host(bool iis_ipv6);
 
 

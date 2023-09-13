@@ -21,10 +21,13 @@
 #include <unordered_map>
 #include <format>
 #include <fstream>
+
+#include "Settings.h"
 #include "States.h"
 
 
 extern P2PConnection g_connection;
+extern Settings g_settings;
 extern std::string g_log;
 extern int g_ui_frame;
 extern bool g_is_log;
@@ -38,6 +41,9 @@ struct UI_State
     }testcnt;
 }g_UI_State;
 
+#define address_max_length 256
+static char address[address_max_length];
+static int delay = g_connection.delay_compensation;
 
 void SetUI(IDirect3DDevice9* device)
 {
@@ -75,8 +81,7 @@ void SetUI(IDirect3DDevice9* device)
 
     
     
-
-    static int delay = g_connection.delay_compensation;
+    
     ImGui::SetNextItemWidth(100.0f);
     if (ImGui::InputInt("delay", &delay, 1, 5))
     {
@@ -105,7 +110,6 @@ void SetUI(IDirect3DDevice9* device)
     ImGui::Separator();
 
     ImGui::SetNextItemWidth(240.0f);
-    static char address[256];
 
     if (ImGui::InputText("host IP", address, sizeof(address), g_connection.connect_state==ConnectState::No_Connection ? ImGuiInputTextFlags_::ImGuiInputTextFlags_None : ImGuiInputTextFlags_::ImGuiInputTextFlags_ReadOnly)){
         auto [addr,port,is_ipv6] = get_addr_and_port(std::string(address));
@@ -156,13 +160,7 @@ void SetUI(IDirect3DDevice9* device)
         ImGui::Separator();
         ImGui::SetNextItemWidth(50.0f);
         if (ImGui::Button("show cmd")) {
-            AllocConsole();
-#pragma warning(push)
-#pragma warning(disable:4996)
-#pragma warning(disable:6031)
-            freopen("CONOUT$", "w", stdout);
-            std::ios::sync_with_stdio(0);
-#pragma warning(pop)
+            AllocAndShowConsole();
         }
         ImGui::SameLine();
         ImGui::SetNextItemWidth(50.0f);
@@ -194,4 +192,20 @@ void SetUI(IDirect3DDevice9* device)
     // *(DWORD*)(0x00607930) = 2500;
     // *(DWORD*)(0x006079F0) = 2500;
     //inf power
+}
+
+void SetDataFromSettingsIntoUI()
+{
+    std::string host_ip = g_settings.GetHostIp();
+
+    if (!host_ip.empty() && host_ip.length() < address_max_length) {
+        strcpy_s(address, host_ip.c_str());
+    }
+
+    int delaySettings = g_settings.GetDelayCompensation();
+
+    if (delaySettings >= 0)
+    {
+        delay = delaySettings;
+    }
 }

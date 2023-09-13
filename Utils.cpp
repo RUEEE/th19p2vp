@@ -157,3 +157,14 @@ std::tuple<std::string, int, bool> get_addr_and_port(const std::string& addr)
     }
     return std::make_tuple(addr_str, port, is_ipv6);
 }
+
+void AllocAndShowConsole()
+{
+    AllocConsole();
+#pragma warning(push)
+#pragma warning(disable:4996)
+#pragma warning(disable:6031)
+    freopen("CONOUT$", "w", stdout);
+    std::ios::sync_with_stdio(0);
+#pragma warning(pop)
+}

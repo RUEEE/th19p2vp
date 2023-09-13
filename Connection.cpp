@@ -6,10 +6,14 @@
 #include "States.h"
 #include <set>
 
+#include "Settings.h"
+#include "inih/cpp/INIReader.h"
+
 P2PConnection g_connection;
 
 extern std::unordered_map<int, KeyState> g_keystate_self;
 extern std::unordered_map<int, KeyState> g_keystate_rcved;
+extern Settings g_settings;
 int g_ui_frame;
 bool g_is_synced = true;
 
@@ -454,6 +458,26 @@ P2PConnection::P2PConnection():
 	socket_udp = INVALID_SOCKET;
 }
 
+void P2PConnection::LoadSettings()
+{
+    std::string host_ip = g_settings.GetHostIp();
+
+    if (!host_ip.empty())
+    {
+        auto [addr,port,is_ipv6] = get_addr_and_port(host_ip);
+        g_connection.SetGuestSocketSetting(addr, port, is_ipv6);
+    }
+
+    int delay = g_settings.GetDelayCompensation();
+
+    if (delay >= 0)
+    {
+        delay_compensation = delay;
+    }
+
+    port_listen_Host = g_settings.GetHostPort();
+    port_send_Guest = g_settings.GetGuestPort();
+}
 
 
 bool P2PConnection::SetUpConnect_Guest()
