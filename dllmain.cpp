@@ -31,9 +31,7 @@ BOOL APIENTRY DllMain(HMODULE hModule,
     {
     case DLL_PROCESS_ATTACH:
 #ifndef  THCRAP
-        ImGui::CreateContext();
-        ImGui::StyleColorsLight();
-        InjectAll();
+        LoadDll();
 #endif
         break;
     case DLL_THREAD_ATTACH:

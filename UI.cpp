@@ -50,41 +50,40 @@ void SetUI(IDirect3DDevice9* device)
     ImGui::SetNextWindowPos(ImVec2(0.0f, 0.0f));
 
     ImGui::SetNextWindowCollapsed(is_collapse);
+
+    const char* wind_capital = "###wind";
     if (g_connection.connect_state == ConnectState::No_Connection)
     {
-        ImGui::Begin("No Connection###wind",0,ImGuiWindowFlags_::ImGuiWindowFlags_NoMove | ImGuiWindowFlags_::ImGuiWindowFlags_NoResize);
+        wind_capital = "No Connection###wind";
     }else if (g_connection.connect_state == ConnectState::Connected){
         if(g_is_synced)
-            ImGui::Begin("PVP###wind", 0, ImGuiWindowFlags_::ImGuiWindowFlags_NoMove | ImGuiWindowFlags_::ImGuiWindowFlags_NoResize);
+            wind_capital = "PVP###wind";
         else
-            ImGui::Begin("Desync Probably###wind", 0, ImGuiWindowFlags_::ImGuiWindowFlags_NoMove | ImGuiWindowFlags_::ImGuiWindowFlags_NoResize);
+            wind_capital = "Desync Probably###wind";
     }else{
         if(g_connection.is_ipv6)
-            ImGui::Begin("(ipv6) Waiting for 2P###wind", 0, ImGuiWindowFlags_::ImGuiWindowFlags_NoMove | ImGuiWindowFlags_::ImGuiWindowFlags_NoResize);
+            wind_capital = "(ipv6) Waiting for 2P###wind";
         else
-            ImGui::Begin("(ipv4) Waiting for 2P###wind", 0, ImGuiWindowFlags_::ImGuiWindowFlags_NoMove | ImGuiWindowFlags_::ImGuiWindowFlags_NoResize);
+            wind_capital = "(ipv4) Waiting for 2P###wind";
     }
+    ImGui::Begin(wind_capital, 0, ImGuiWindowFlags_::ImGuiWindowFlags_NoMove | ImGuiWindowFlags_::ImGuiWindowFlags_NoResize);
+
     if (g_connection.connect_state == ConnectState::No_Connection){
         g_is_focus_ui = ImGui::IsWindowFocused();
     }else{
         g_is_focus_ui = false;
     }
 
-    
     is_collapse=ImGui::IsWindowCollapsed();
 
-    
-    
-
-    static int delay = g_connection.delay_compensation;
+    int delay = g_connection.delay_compensation;
     ImGui::SetNextItemWidth(100.0f);
     if (ImGui::InputInt("delay", &delay, 1, 5))
     {
         delay = std::clamp(delay, 1, 180);
         if (g_connection.connect_state == ConnectState::No_Connection) {
             g_connection.delay_compensation = delay;
-        }
-        else {
+        } else {
             delay = g_connection.delay_compensation;
         }
     }
@@ -105,14 +104,14 @@ void SetUI(IDirect3DDevice9* device)
     ImGui::Separator();
 
     ImGui::SetNextItemWidth(240.0f);
-    static char address[256];
 
-    if (ImGui::InputText("host IP", address, sizeof(address), g_connection.connect_state==ConnectState::No_Connection ? ImGuiInputTextFlags_::ImGuiInputTextFlags_None : ImGuiInputTextFlags_::ImGuiInputTextFlags_ReadOnly)){
-        auto [addr,port,is_ipv6] = get_addr_and_port(std::string(address));
-        g_connection.SetGuestSocketSetting(addr, port, is_ipv6);
+    if (ImGui::InputText("host IP", g_connection.address_sendto, sizeof(g_connection.address_sendto), 
+        g_connection.connect_state==ConnectState::No_Connection ? ImGuiInputTextFlags_::ImGuiInputTextFlags_AutoSelectAll : ImGuiInputTextFlags_::ImGuiInputTextFlags_ReadOnly
+    )){
+        g_connection.SetGuestSocketSetting();
     }
-    if (g_connection.is_addr_guest_sendto_set){
-        ImGui::LabelText(" ###Gip", "%s: %s, port: %d", g_connection.is_ipv6 ? "ipv6" : "ipv4", g_connection.addr_sendto.c_str(), g_connection.port_sendto);
+    if (g_connection.is_addr_sendto_set){
+        ImGui::LabelText(" ###Gip", "%s: %s, port: %d", g_connection.is_ipv6 ? "ipv6" : "ipv4", g_connection.ip_sendto.c_str(), g_connection.port_sendto);
     }else{
         ImGui::LabelText(" ###Gip", "invalid ip address");
     }
@@ -182,7 +181,7 @@ void SetUI(IDirect3DDevice9* device)
         ImGui::End();
     }
 
-    ImGui::TextColored(ImVec4(0.3f, 0.7f, 0.6f, 1.0f), "ver 1.03");
+    ImGui::TextColored(ImVec4(0.3f, 0.7f, 0.6f, 1.0f), "ver 1.04");
     ImGui::End();
 
 

@@ -81,8 +81,11 @@ Click show cmd will show the cmd console (it may cause lag when logging)
 
 **since i only have keyboard, the gamepad control might be buggy(**
 
-
 ## Updates
+
+1.04(23/09/14)
+
+ 	automatically save/load settings to/from ```%appdata%/ShanghaiAlice/th19/p2vp_settings.ini```
 
 1.03 (23/09/13)
 

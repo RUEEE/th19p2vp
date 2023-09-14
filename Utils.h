@@ -18,8 +18,15 @@ ImVec2 GetClientFromStage(ImVec2 stage, ImVec2 client_sz, bool is_1P);
 DWORD GetAddress(DWORD Addr_noALSR);
 
 constexpr int c_no_port = -1;
+
+int s_atoi(const char* str, int default_int);
+int s_stoi(const std::string& str, int default_int);
+
+void PushCurrentDictionary(LPCWSTR new_dictionary);
+void PopCurrentDictionary();
+
 bool test_is_ipv6(const std::string& addr);
-std::tuple<std::string, int, bool> get_addr_and_port(const std::string& addr);
+std::tuple<std::string, int, bool> split_addr_and_port(const std::string& addr);
 
 #define VALUED(x)  (*(DWORD*)(x))
 #define VALUEF(x)  (*(float*)(x))

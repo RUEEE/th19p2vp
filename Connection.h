@@ -57,6 +57,7 @@ enum ConnectState
 
 struct P2PConnection
 {
+	static constexpr char const *  c_setting_file = ".\\p2vp_settings.ini";
 	static constexpr int c_max_time_retry_timeout = 32;
 	static constexpr int c_time_ms_retry_sync = 2000;
 
@@ -71,8 +72,10 @@ struct P2PConnection
 	int port_listen_Host;
 	int port_send_Guest;
 
-	bool is_addr_guest_sendto_set;
-	std::string addr_sendto;
+	bool is_addr_sendto_set;
+	char address_sendto[256];
+
+	std::string ip_sendto;
 	int port_sendto;
 
 	bool is_blocking;
@@ -94,10 +97,8 @@ struct P2PConnection
 	bool SetUpConnect_Guest();
 	bool SetUpConnect_Host(bool iis_ipv6);
 
-
 	void EndConnect();
 
-	
 	static bool WSAStartUp();
 
 	Pack CreateEmptyPack();
@@ -105,7 +106,10 @@ struct P2PConnection
 	int SendUDPPack(Data_KeyState data);
 	int SendUDPPack(Data_NAK_KeyState data);
 	int SendUDPPack(Data_StatePack data);
-	bool SetGuestSocketSetting(std::string host_ipaddress, int port_sendto_Guest,bool iis_ipv6);
+	bool SetGuestSocketSetting();
+
+	void LoadSettings();
+	void SaveSettings();
 };
 
 

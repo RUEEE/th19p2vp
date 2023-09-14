@@ -22,3 +22,4 @@ BOOL CALLBACK EnumWindowsProc(HWND hwnd, LPARAM lParam);
 void unHook();
 
 void InjectAll();
+void LoadDll();

@@ -47,7 +47,6 @@ DWORD GetAddress(DWORD Addr_noALSR)
 
 void InitUtils()
 {
-    
 	QueryPerformanceFrequency(&(g_time_freq));
     GetTime(&g_start_time);
 }
@@ -113,6 +112,21 @@ bool test_is_ipv6(const std::string& addr)
     return count>=2;//ipv4 only have 1 :
 }
 
+int s_atoi(const char* str, int default_int)
+{
+    int ret = default_int;
+    try {
+        ret = std::atoi(str);
+    }
+    catch (std::invalid_argument const& ex) {
+        ret = default_int;
+    }
+    catch (std::out_of_range const& ex) {
+        ret = default_int;
+    }
+    return ret;
+}
+
 int s_stoi(const std::string& str,int default_int)
 {
     int ret= default_int;
@@ -127,9 +141,27 @@ int s_stoi(const std::string& str,int default_int)
     }
     return ret;
 }
+#include <stack>
+std::stack<std::wstring> g_dict;
+void PushCurrentDictionary(LPCWSTR new_dictionary)
+{
+    WCHAR buffer[MAX_PATH] = { 0 };
+    GetCurrentDirectoryW(MAX_PATH, buffer);
+    g_dict.push(std::wstring(buffer));
 
 
-std::tuple<std::string, int, bool> get_addr_and_port(const std::string& addr)
+    ExpandEnvironmentStringsW(new_dictionary,buffer,MAX_PATH);
+    SetCurrentDirectoryW(buffer);
+}
+
+void PopCurrentDictionary()
+{
+    SetCurrentDirectoryW(g_dict.top().c_str());
+    g_dict.pop();
+}
+
+
+std::tuple<std::string, int, bool> split_addr_and_port(const std::string& addr)
 {
     if (addr.size() == 0)
         return std::make_tuple("", c_no_port, false);

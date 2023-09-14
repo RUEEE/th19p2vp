@@ -414,9 +414,7 @@ extern "C"
             return 1;
         }
         free(ch);
-        ImGui::CreateContext();
-        ImGui::StyleColorsLight();
-        InjectAll();
+        LoadDll();
         return 0;
     }
 }
@@ -477,5 +475,14 @@ void InjectAll()
     
     Address<DWORD>(GetAddress(0x4D4021)).SetValue(0x000001B9);
     Address<DWORD>(GetAddress(0x4D4025)).SetValue(0x90909000);
+}
+
+
+extern P2PConnection g_connection;
+void LoadDll()
+{
+    ImGui::CreateContext();
+    ImGui::StyleColorsLight();
+    InjectAll();
 }
 

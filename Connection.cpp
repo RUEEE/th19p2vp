@@ -444,14 +444,16 @@ HOST_COMFIRMING:
 P2PConnection::P2PConnection():
 	port_listen_Host(10800),port_send_Guest(10801),port_sendto(c_no_port), delay_compensation(3),
 	is_host(true), is_ipv6(false),pack_index(0),is_blocking(false),
-	connect_state(ConnectState::No_Connection),is_addr_guest_sendto_set(false)
+	connect_state(ConnectState::No_Connection),is_addr_sendto_set(false)
 {
-	// GetTime(&last_init_value);
 	memset(&addr_self6, 0, sizeof(addr_self6));
 	memset(&addr_other6, 0, sizeof(addr_other6));
 	memset(&addr_self4, 0, sizeof(addr_self4));
 	memset(&addr_other4, 0, sizeof(addr_other4));
+	memset(&address_sendto, 0, sizeof(address_sendto));
 	socket_udp = INVALID_SOCKET;
+
+	LoadSettings();
 }
 
 
@@ -468,14 +470,14 @@ bool P2PConnection::SetUpConnect_Guest()
 		socket_udp = socket(AF_INET6, SOCK_DGRAM, IPPROTO_UDP);
 		res_udp=bind(socket_udp, (SOCKADDR*)&(addr_self6), sizeof(addr_self6));
 
-		LogInfo(std::format("ipv6 Guest,to {} port: {}", this->addr_sendto,this->port_sendto));
+		LogInfo(std::format("ipv6 Guest,to {} port: {}", this->ip_sendto,this->port_sendto));
 	}else {//ipv4
 		
 		addr_self4 = { AF_INET, htons(port_send_Guest) };
 		socket_udp = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
 		res_udp = bind(socket_udp, (SOCKADDR*)&(addr_self4), sizeof(addr_self4));
 
-		LogInfo(std::format("ipv4 Guest,to {} port: {}", this->addr_sendto, this->port_sendto));
+		LogInfo(std::format("ipv4 Guest,to {} port: {}", this->ip_sendto, this->port_sendto));
 	}
 	if (res_udp != 0 || socket_udp ==INVALID_SOCKET) {
 		LogError(std::format("fail to create udp socket : {}", WSAGetLastError()));
@@ -485,6 +487,7 @@ bool P2PConnection::SetUpConnect_Guest()
 	SetSocketBlocking(socket_udp);
 	LogInfo(std::format("set up connect"));
 	connect_state = ConnectState::Guest_Requesting;
+	SaveSettings();
 	return true;
 }
 
@@ -515,6 +518,7 @@ bool P2PConnection::SetUpConnect_Host(bool iis_ipv6)
 	SetSocketBlocking(socket_udp);
 	LogInfo(std::format("set up connect"));
 	connect_state = ConnectState::Host_Listening;
+	SaveSettings();
 	return true;
 }
 
@@ -636,35 +640,88 @@ int P2PConnection::SendUDPPack(Data_StatePack data)
 	return l_nLen;
 }
 
-bool P2PConnection::SetGuestSocketSetting(std::string host_ipaddress, int port_sendto_Guest, bool iis_ipv6)
+
+void P2PConnection::LoadSettings()
 {
-	is_addr_guest_sendto_set = false;
-	if (port_sendto_Guest > 65535 || port_sendto_Guest < 0)
+	char buffer[256];
+	PushCurrentDictionary(L"%appdata%\\ShanghaiAlice\\th19");
+
+	GetPrivateProfileStringA("connect_setting", "addr_sendto", "", buffer, sizeof(buffer), c_setting_file);
+	memcpy(address_sendto, buffer, sizeof(buffer));
+	SetGuestSocketSetting();
+
+	GetPrivateProfileStringA("connect_setting", "delay", "3", buffer, sizeof(buffer), c_setting_file);
+	delay_compensation=s_atoi(buffer,3);
+
+	GetPrivateProfileStringA("connect_setting", "port_for_guest", "10801", buffer, sizeof(buffer), c_setting_file);
+	port_send_Guest = s_atoi(buffer, 10801);
+	if (port_send_Guest < 0 || port_send_Guest>65535)
+		port_send_Guest = 10801;
+
+	GetPrivateProfileStringA("connect_setting", "port_for_host", "10800", buffer, sizeof(buffer), c_setting_file);
+	port_listen_Host = s_atoi(buffer, 10800);
+	if (port_listen_Host < 0 || port_listen_Host>65535)
+		port_listen_Host = 10800;
+	PopCurrentDictionary();
+
+	SaveSettings();
+}
+
+void P2PConnection::SaveSettings()
+{
+	PushCurrentDictionary(L"%appdata%\\ShanghaiAlice\\th19");
+
+	WritePrivateProfileStringA("connect_setting", "addr_sendto", address_sendto, c_setting_file);
+
+	std::string buf="";
+	buf = std::format("{}", delay_compensation);
+	WritePrivateProfileStringA("connect_setting", "delay", buf.c_str(), c_setting_file);
+
+	buf = std::format("{}", port_send_Guest);
+	WritePrivateProfileStringA("connect_setting", "port_for_guest", buf.c_str(), c_setting_file);
+
+	buf = std::format("{}", port_listen_Host);
+	WritePrivateProfileStringA("connect_setting", "port_for_host", buf.c_str(), c_setting_file);
+
+	PopCurrentDictionary();
+}
+
+bool P2PConnection::SetGuestSocketSetting()
+{
+	is_addr_sendto_set = false;
+	
+	auto [ip_get, port_get, is_ipv6_get]=split_addr_and_port(std::string(address_sendto));
+	is_ipv6 = is_ipv6_get;
+	
+	if (port_get > 65535 || port_get < 0){
+		port_sendto = c_no_port;
 		return false;
-	is_ipv6 = iis_ipv6;
+	}else{
+		port_sendto = port_get;
+	}
+
 	if (is_ipv6) {
-		addr_other6 = { AF_INET6, htons(port_sendto_Guest) };
-		if (inet_pton(AF_INET6, host_ipaddress.c_str(), &(addr_other6.sin6_addr)) != 1) {
+		addr_other6 = { AF_INET6, htons(port_sendto) };
+		if (inet_pton(AF_INET6, ip_get.c_str(), &(addr_other6.sin6_addr)) != 1) {
 			LogError("Wrong IP addr");
 			return false;
 		}
 		char buf[256] = { 0 };
 		inet_ntop(AF_INET6, &addr_other6.sin6_addr, buf, sizeof(buf));
-		addr_sendto = buf;
-		port_sendto = port_sendto_Guest;
+		ip_sendto = buf;
 	}else {//ipv4
-		addr_other4 = { AF_INET, htons(port_sendto_Guest) };
-		if (inet_pton(AF_INET, host_ipaddress.c_str(), &(addr_other4.sin_addr)) != 1) {
+		addr_other4 = { AF_INET, htons(port_sendto) };
+		if (inet_pton(AF_INET, ip_get.c_str(), &(addr_other4.sin_addr)) != 1) {
 			LogError("Wrong IP addr");
 			return false;
 		}
 		char buf[256] = { 0 };
 		inet_ntop(AF_INET, &addr_other4.sin_addr, buf, sizeof(buf));
-		addr_sendto = buf;
-		port_sendto = port_sendto_Guest;
+		ip_sendto = buf;
 	}
 	
-	is_addr_guest_sendto_set = true;
+	is_addr_sendto_set = true;
+	return true;
 }
 
 
