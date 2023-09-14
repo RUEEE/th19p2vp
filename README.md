@@ -85,16 +85,17 @@ Click show cmd will show the cmd console (it may cause lag when logging)
 
 1.04(23/09/14)
 
- 	automatically save/load settings to/from ```%appdata%/ShanghaiAlice/th19/p2vp_settings.ini```
+* automatically save/load settings to/from **%appdata%/ShanghaiAlice/th19/p2vp_settings.ini**
 
 1.03 (23/09/13)
 
-​	thcrap support, game without ALSR support
+* thcrap support, game without ALSR support
 
 1.02 (23/09/12)
-	changed UI, make it easier to use
+
+* changed UI, make it easier to use
 
 1.01 (23/09/11)
-	make patch try to resync when the game desyncs and is not in game
-	changes UI slightly
-	
+
+* make patch try to resync when the game desyncs and is not in game
+* changes UI slightly
