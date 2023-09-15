@@ -644,7 +644,7 @@ int P2PConnection::SendUDPPack(Data_StatePack data)
 void P2PConnection::LoadSettings()
 {
 	char buffer[256];
-	PushCurrentDictionary(L"%appdata%\\ShanghaiAlice\\th19");
+	PushCurrentDirectory(L"%appdata%\\ShanghaiAlice\\th19");
 
 	GetPrivateProfileStringA("connect_setting", "addr_sendto", "", buffer, sizeof(buffer), c_setting_file);
 	memcpy(address_sendto, buffer, sizeof(buffer));
@@ -662,14 +662,14 @@ void P2PConnection::LoadSettings()
 	port_listen_Host = s_atoi(buffer, 10800);
 	if (port_listen_Host < 0 || port_listen_Host>65535)
 		port_listen_Host = 10800;
-	PopCurrentDictionary();
+	PopCurrentDirectory();
 
 	SaveSettings();
 }
 
 void P2PConnection::SaveSettings()
 {
-	PushCurrentDictionary(L"%appdata%\\ShanghaiAlice\\th19");
+	PushCurrentDirectory(L"%appdata%\\ShanghaiAlice\\th19");
 
 	WritePrivateProfileStringA("connect_setting", "addr_sendto", address_sendto, c_setting_file);
 
@@ -683,7 +683,7 @@ void P2PConnection::SaveSettings()
 	buf = std::format("{}", port_listen_Host);
 	WritePrivateProfileStringA("connect_setting", "port_for_host", buf.c_str(), c_setting_file);
 
-	PopCurrentDictionary();
+	PopCurrentDirectory();
 }
 
 bool P2PConnection::SetGuestSocketSetting()

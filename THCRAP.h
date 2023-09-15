@@ -1,7 +1,7 @@
 #pragma once
 
 // if you want to make the patch compatible with thcrap
-#define THCRAP
+//#define THCRAP
 
 
 #ifdef THCRAP

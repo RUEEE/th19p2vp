@@ -2,7 +2,15 @@
 
 A tool for th19 P2P pvp
 
+## Compile
+
+The patch uses VS2022 with winSDK and DirectXSDK. 
+
+Install DirectX SDK, and add the SDK's path to VS include path and library path, then you can compile the patch.
+
 ## Installation
+
+The patch is **NOT** compatible with steam version. You can replace the steam version th19.exe with the th19.exe given in the release's zip file(it's CD version).
 
 ### With THCrap
 
@@ -82,6 +90,10 @@ Click show cmd will show the cmd console (it may cause lag when logging)
 **since i only have keyboard, the gamepad control might be buggy(**
 
 ## Updates
+
+1.05(23/09/15)
+
+​	show a custom cursor in the window and supports full screen mode, fix full screen bugs.
 
 1.04(23/09/14)
 

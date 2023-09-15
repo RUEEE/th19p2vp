@@ -188,26 +188,28 @@ HRESULT STDMETHODCALLTYPE MyPresent(IDirect3DDevice9* thiz, const RECT* pSourceR
         g_device->EndScene();
     }
     //hook=======================
-    unhookVTable(g_device, 17, RealPresent);
-    HRESULT res = g_device->Present(pSourceRect, pDestRect, hDestWindowOverride, pDirtyRegion);
-    hookVTable(g_device, 17, MyPresent, (void**)&RealPresent);
+    //unhookVTable(g_device, 17, RealPresent);
+    //HRESULT res = g_device->Present(pSourceRect, pDestRect, hDestWindowOverride, pDirtyRegion);
+    HRESULT res = RealPresent(g_device, pSourceRect, pDestRect, hDestWindowOverride, pDirtyRegion);
+    //hookVTable(g_device, 17, MyPresent, (void**)&RealPresent);
     //present is no.18
     return res;
 }
 
 HRESULT STDMETHODCALLTYPE MyCreateDevice(IDirect3D9* thiz, UINT Adapter, D3DDEVTYPE DeviceType, HWND hFocusWindow, DWORD BehaviorFlags, D3DPRESENT_PARAMETERS* pPresentationParameters, IDirect3DDevice9** ppReturnedDeviceInterface)
 {
-    unhookVTable(g_d3d9, 16, RealCreateDevice);
+    //unhookVTable(g_d3d9, 16, RealCreateDevice);
     HRESULT res = RealCreateDevice(thiz, Adapter, DeviceType, hFocusWindow, BehaviorFlags, pPresentationParameters, ppReturnedDeviceInterface);
-    g_device = *ppReturnedDeviceInterface;
-    hookVTable(g_device, 17, MyPresent, (void**)&RealPresent);
-    //hook===============================
-    ImGui_ImplDX9_Init(g_device);
-    g_is_hooked = true;
-    // {
-    //     auto fonts = ImGui::GetIO().Fonts;
-    //     fonts->AddFontFromFileTTF("simhei.ttf", 13.0f, NULL, fonts->GetGlyphRangesChineseSimplifiedCommon());
-    // }
+    if (FAILED(res)){
+        LogError("fail to create d3d device");
+        // MessageBoxA(NULL, "fail to create device", "error", MB_OK);
+    }else{
+        g_device = *ppReturnedDeviceInterface;
+        hookVTable(g_device, 17, MyPresent, (void**)&RealPresent);
+        //hook===============================
+        ImGui_ImplDX9_Init(g_device);
+        g_is_hooked = true;
+    }
     return res;
 }
 
@@ -339,6 +341,23 @@ HANDLE WINAPI MyCreateMutexW(LPSECURITY_ATTRIBUTES se, BOOL initialOwner, LPCWST
     return Ret;
 }
 
+int(*WINAPI RealShowCursor)(BOOL bShow);
+int WINAPI MyShowCursor(BOOL bShow)
+{
+    int Ret=0;
+    do
+    {
+        __asm
+        {
+            push 0
+            call RealShowCursor
+            mov Ret, eax
+        }
+    } while (Ret >= 0);
+    if(bShow==TRUE)
+        return 0;// pretend to show cursor
+    return -1;
+}
 
 
 void unHook()
@@ -373,12 +392,20 @@ HWND WINAPI MyTHCrapCreateWindowExW(DWORD dwExStyle
 {
     HWND hw = CreateWindowExW(dwExStyle, lpClassName, lpWindowName, dwStyle, X, Y, nWidth, nHeight,
         hWndParent, hMenu, hInstance, lpParam);
-    unhookIAT(GetModuleHandle(NULL), "user32.dll", "CreateWindowExW");
     ImGui_ImplWin32_Init(hw);
     g_wnd_hwnd = hw;
     g_oldWndProc = (WNDPROC)SetWindowLongW(g_wnd_hwnd, GWL_WNDPROC, (LONG)MyWndProc);
     return hw;
 }
+
+int WINAPI MyTHCrapShowCursor(BOOL bShow)
+{
+    while (ShowCursor(FALSE) >=0);
+    if (bShow == TRUE)
+        return 0;// pretend to show cursor
+    return -1;
+}
+
 HANDLE WINAPI MyTHCrapCreateMutexW(LPSECURITY_ATTRIBUTES se, BOOL initialOwner, LPCWSTR name)
 {
     HANDLE Ret = CreateMutexW(se, initialOwner, name);
@@ -399,7 +426,7 @@ IDirect3D9* WINAPI MyTHCrapDirect3DCreate9(UINT SDKVersion)
 {
     //hook
     g_d3d9 = Direct3DCreate9(SDKVersion);
-    hookVTable(g_d3d9, 16, MyCreateDevice, (void**)&RealCreateDevice); // CreateDevice是IDirect3D9第17个函数
+    hookVTable(g_d3d9, 16, MyCreateDevice, (void**)&RealCreateDevice);
     return g_d3d9;
 }
 #endif
@@ -428,12 +455,14 @@ void InjectAll()
     hookIAT(GetModuleHandle(NULL), "user32.dll", "CreateWindowExW", MyCreateWindowExW, (void**)&RealCreateWindowExW);
     hookIAT(GetModuleHandle(NULL), "Kernel32.dll", "CreateMutexW", MyCreateMutexW, (void**)&RealCreateMutexW);
     hookIAT(GetModuleHandle(NULL), "d3d9.dll", "Direct3DCreate9", MyDirect3DCreate9, (void**)&RealDirect3DCreate9);
+    hookIAT(GetModuleHandle(NULL), "user32.dll", "ShowCursor", MyShowCursor, (void**)&RealShowCursor);
 #else
     //int (*detour_chain)(const char* dll_name, int return_old_ptrs, ...);
     //detour_chain = (decltype(detour_chain))GetProcAddress(hinstLib, "MyFunction");
 
     detour_chain("user32.dll", 1,
         "CreateWindowExW", MyTHCrapCreateWindowExW, &RealCreateWindowExW,
+        //"ShowCursor", MyTHCrapShowCursor, &RealShowCursor,
         NULL
     );
     detour_chain("Kernel32.dll", 1,
@@ -483,6 +512,11 @@ void LoadDll()
 {
     ImGui::CreateContext();
     ImGui::StyleColorsLight();
+
+    ImGui::GetIO().MouseDrawCursor = true;
+    ImGui::SetMouseCursor(ImGuiMouseCursor_::ImGuiMouseCursor_Arrow);//draw own cursor
+
     InjectAll();
+
 }
 

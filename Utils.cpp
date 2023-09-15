@@ -141,23 +141,31 @@ int s_stoi(const std::string& str,int default_int)
     }
     return ret;
 }
-#include <stack>
-std::stack<std::wstring> g_dict;
-void PushCurrentDictionary(LPCWSTR new_dictionary)
+#include <vector>
+std::vector<std::wstring> g_directory;
+int g_count_directory=0;
+void PushCurrentDirectory(LPCWSTR new_dictionary)
 {
     WCHAR buffer[MAX_PATH] = { 0 };
     GetCurrentDirectoryW(MAX_PATH, buffer);
-    g_dict.push(std::wstring(buffer));
-
+    if (g_directory.size() <= g_count_directory)
+        g_directory.push_back(std::wstring(buffer));
+    else
+        g_directory[g_count_directory]=std::wstring(buffer);
+    g_count_directory++;
 
     ExpandEnvironmentStringsW(new_dictionary,buffer,MAX_PATH);
     SetCurrentDirectoryW(buffer);
 }
 
-void PopCurrentDictionary()
+void PopCurrentDirectory()
 {
-    SetCurrentDirectoryW(g_dict.top().c_str());
-    g_dict.pop();
+    if (!g_directory.empty())
+    {
+        std::wstring last_dicg_dict = g_directory[g_count_directory-1];
+        SetCurrentDirectoryW(last_dicg_dict.c_str());
+        g_count_directory--;
+    }
 }
 
 
