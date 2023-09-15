@@ -8,6 +8,8 @@ The patch uses VS2022 with winSDK and DirectXSDK.
 
 Install DirectX SDK, and add the SDK's path to VS include path and library path, then you can compile the patch.
 
+If you want to change whether to use THCrap, then go to THCrap.h and remove/set the THCrap define.
+
 ## Installation
 
 The patch is **NOT** compatible with steam version. You can replace the steam version th19.exe with the th19.exe given in the release's zip file(it's CD version).
