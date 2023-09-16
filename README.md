@@ -95,7 +95,7 @@ Click show cmd will show the cmd console (it may cause lag when logging)
 
 1.05(23/09/15)
 
-​	show a custom cursor in the window and supports full screen mode, fix full screen bugs.
+* show a custom cursor in the window and supports full screen mode, fix full screen bugs.
 
 1.04(23/09/14)
 
