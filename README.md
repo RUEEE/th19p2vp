@@ -93,6 +93,10 @@ Click show cmd will show the cmd console (it may cause lag when logging)
 
 ## Updates
 
+1.06(23/09/16)
+
+* try to support gamepad(might exist bug)
+
 1.05(23/09/15)
 
 * show a custom cursor in the window and supports full screen mode, fix full screen bugs.
