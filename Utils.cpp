@@ -1,13 +1,72 @@
+#include "pch.h"
 #include "Utils.h"
 #include <string>
 #include <iostream>
 #include <format>
+
+#include "Connection.h"
+
 LARGE_INTEGER g_time_freq;
 LARGE_INTEGER g_cur_time;
 LARGE_INTEGER g_start_time;
 
 bool g_is_log=false;
 std::string g_log;
+
+extern P2PConnection g_connection;
+char c_setting_file[] = ".\\p2vp_settings.ini";
+void LoadSettings()
+{
+    char buffer[256];
+    PushCurrentDirectory(L"%appdata%\\ShanghaiAlice\\th19");
+
+    GetPrivateProfileStringA("connect_setting", "addr_sendto", "", buffer, sizeof(buffer), c_setting_file);
+    memcpy(g_connection.address_sendto, buffer, sizeof(buffer));
+    g_connection.SetGuestSocketSetting();
+
+    GetPrivateProfileStringA("connect_setting", "delay", "3", buffer, sizeof(buffer), c_setting_file);
+    g_connection.delay_compensation = s_atoi(buffer, 3);
+
+    GetPrivateProfileStringA("connect_setting", "port_for_guest", "10801", buffer, sizeof(buffer), c_setting_file);
+    g_connection.port_send_Guest = s_atoi(buffer, 10801);
+    if (g_connection.port_send_Guest < 0 || g_connection.port_send_Guest>65535)
+        g_connection.port_send_Guest = 10801;
+
+    GetPrivateProfileStringA("connect_setting", "port_for_host", "10800", buffer, sizeof(buffer), c_setting_file);
+    g_connection.port_listen_Host = s_atoi(buffer, 10800);
+    if (g_connection.port_listen_Host < 0 || g_connection.port_listen_Host>65535)
+        g_connection.port_listen_Host = 10800;
+
+    // GetPrivateProfileStringA("key_setting", "force_keyboard", "0", buffer, sizeof(buffer), c_setting_file);
+    // int is_force = s_atoi(buffer, 0);
+    // g_force_keyboard = (is_force != 0);
+
+    PopCurrentDirectory();
+
+    SaveSettings();
+}
+
+void SaveSettings()
+{
+    PushCurrentDirectory(L"%appdata%\\ShanghaiAlice\\th19");
+
+    WritePrivateProfileStringA("connect_setting", "addr_sendto", g_connection.address_sendto, c_setting_file);
+
+    std::string buf = "";
+    buf = std::format("{}", g_connection.delay_compensation);
+    WritePrivateProfileStringA("connect_setting", "delay", buf.c_str(), c_setting_file);
+
+    buf = std::format("{}", g_connection.port_send_Guest);
+    WritePrivateProfileStringA("connect_setting", "port_for_guest", buf.c_str(), c_setting_file);
+
+    buf = std::format("{}", g_connection.port_listen_Host);
+    WritePrivateProfileStringA("connect_setting", "port_for_host", buf.c_str(), c_setting_file);
+
+    // buf = std::format("{}", g_force_keyboard==true?1:0);
+    // WritePrivateProfileStringA("key_setting", "force_keyboard", buf.c_str(), c_setting_file);
+
+    PopCurrentDirectory();
+}
 
 void Log(std::string lv, std::string msg)
 {

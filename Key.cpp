@@ -11,6 +11,10 @@
 #include <random>
 #include "States.h"
 
+
+#include <dinput.h>
+
+
 #undef max
 #undef min
 extern P2PConnection g_connection;
@@ -22,7 +26,6 @@ extern LARGE_INTEGER g_cur_time;
 std::unordered_map<int, KeyState> g_keystate_self;
 std::unordered_map<int, KeyState> g_keystate_rcved;
 extern bool g_is_loading;
-
 
 bool IsOnWindow()
 {
@@ -66,7 +69,7 @@ DWORD GetKeyStateP2_original(DWORD keyStruct, __int16* keyMapStruct)
     return ks;
 }
 
-DWORD GetKeyStateGamePad_original(DWORD keyStruct, __int16* keyMapStruct, XINPUT_STATE* ipState,bool* has_gp)
+DWORD GetKeyStateGamePad_xinput_original(DWORD keyStruct, __int16* keyMapStruct, XINPUT_STATE* ipState,bool* has_gp)
 {
     DWORD ks;
     if (!IsOnWindow())
@@ -104,7 +107,7 @@ DWORD GetKeyStateGamePad_original(DWORD keyStruct, __int16* keyMapStruct, XINPUT
     if ((kst & 8) == 0)
         v9 = v8;
     DWORD v10 = v9 | 1;
-    DWORD v11, v12, v13, v14;
+    DWORD v11, v12, v13;
     {
         DWORD* dword_5743E8 = (DWORD*)(GetAddress(0x5743E8));
         if ((kst & dword_5743E8[keyMapStruct[9]]) == 0)
@@ -123,6 +126,72 @@ DWORD GetKeyStateGamePad_original(DWORD keyStruct, __int16* keyMapStruct, XINPUT
             ks = v13;
     }
     return ks;
+}
+
+DWORD GetKeyStateGamePad_dinput_original(DWORD keyStruct, __int16* keyMapStruct, bool* has_gp)
+{
+    *has_gp = true;
+    DWORD v1 = keyStruct;
+    __int16 *v4 = keyMapStruct;
+    if ((*(int(__stdcall**)(DWORD))(**(DWORD**)(v1 + 8) + 100))(*(DWORD*)(v1 + 8)) < 0) {
+        int v17 = 0;
+        if ((*(int(__stdcall**)(DWORD))(**(DWORD**)(v1 + 8) + 28))(*(DWORD*)(v1 + 8)) == -2147024866) {
+            while (1) {
+                DWORD v18 = (*(int(__stdcall**)(DWORD))(**(DWORD**)(v1 + 8) + 28))(*(DWORD*)(v1 + 8));
+                if (++v17 >= 400)
+                    break;
+                if (v18 != -2147024866) {
+                    void(__fastcall * sub_402310)(DWORD thiz, int a2);
+                    sub_402310 = (decltype(sub_402310))(GetAddress(0x402310));
+                    sub_402310(GetAddress(0x607728), 15);
+                    return 0;
+                }
+            }
+        }
+        goto LABEL_70;
+    }
+    int v35[69];
+    memset(v35, 0, 0x110u);
+    if ((*(int(__stdcall**)(DWORD, int, int*))(**(DWORD**)(v1 + 8) + 36))(*(DWORD*)(v1 + 8), 272, v35) < 0)
+    {
+LABEL_70:
+        *has_gp = false;
+        return 0;
+    }
+    int v2=0;
+    if (*v4 >= 0)
+        v2 = *((unsigned __int8*)&v35[12] + *v4) >> 7;
+    DWORD v20 = v4[1];
+    if (v20 >= 0)
+        v2 |= (*((unsigned __int8*)&v35[12] + v20) >> 6) & 2;
+    DWORD v21 = v4[2];
+    if (v21 >= 0)
+        v2 |= (*((unsigned __int8*)&v35[12] + v21) >> 5) & 4;
+    DWORD v22 = v4[4];
+    if (v22 >= 0)
+        v2 |= 2 * (*((BYTE*)&v35[12] + v22) & 0x80);
+    DWORD v23 = v4[3];
+    if (v23 >= 0)
+        v2 |= (*((unsigned __int8*)&v35[12] + v23) >> 4) & 8;
+
+    DWORD v24 = 0;
+    if (v35[0] < -Address<WORD>(GetAddress(0x608614)).GetValue())
+        v24 = 64;
+    DWORD v33 = v24;
+    DWORD v25 = 0;
+    if (v35[1] < -Address<WORD>(GetAddress(0x608616)).GetValue())
+        v25 = 16;
+    DWORD v26 = 0;
+    DWORD v34 = v25 | v33;
+    if (v35[0] > Address<WORD>(GetAddress(0x608614)).GetValue())
+        v26 = 128;
+    DWORD v27 = v26 | v34;
+    DWORD v28 = 0;
+    if (v35[1] > Address<WORD>(GetAddress(0x608616)).GetValue())
+        v28 = 32;
+
+    v2 |= v28 | v27;
+    return v2;
 }
 
 
@@ -279,17 +348,23 @@ void RecordKey(DWORD keyStruct, __int16* keyMapStruct)
         }
     }
         break;
-    case 2://gamepad
+    case 2://gamepad(xinput)
     {
         if (IsOnWindow()) {
             XINPUT_STATE stt;
-            
-            ks = GetKeyStateGamePad_original(keyStruct, keyMapStruct,&stt,&has_gp);
+            ks = GetKeyStateGamePad_xinput_original(keyStruct, keyMapStruct, &stt, &has_gp);
             if (!has_gp)
                 return;
         }
-    }
-    break;
+    }break;
+    case 1:
+    {
+        if (IsOnWindow()) {
+            ks = GetKeyStateGamePad_dinput_original(keyStruct,keyMapStruct, &has_gp);
+            if (!has_gp)
+                return;
+        }
+    }break;
     default:
         break;
     }
@@ -310,19 +385,30 @@ void RecordKey(DWORD keyStruct, __int16* keyMapStruct)
 }
 
 
+
 int __fastcall MyGetKeyState(DWORD thiz) {
     GetTime(&g_cur_time);
 
-    //set control
-    *(DWORD*)(GetAddress(0x0060860C)) = 1;
-    *(DWORD*)(GetAddress(0x00608610)) = 2;
-    DWORD control_option = VALUED(GetAddress(0x005AE3A0));
 
-    if (control_option)
-    {
+    DWORD control_option = VALUED(GetAddress(0x005AE3A0));
+    if (g_connection.connect_state==Connected && control_option){
+        // if(!g_force_keyboard && (thiz + 8) && *(DWORD**)(thiz + 8) && (*(int(__stdcall**)(DWORD))(**(DWORD**)(thiz + 8) + 0x1C))(*(DWORD*)(thiz + 8)) >= 0){
+        //     *(DWORD*)(GetAddress(0x0060860C)) = 3;
+        //     *(DWORD*)(GetAddress(0x00608610)) = 4;
+        //     VALUED(control_option + 0x2E24) = 3;
+        //     VALUED(control_option + 0x2E28) = 4;//enable gamepad
+        // }else {
+        //     *(DWORD*)(GetAddress(0x0060860C)) = 1;
+        //     *(DWORD*)(GetAddress(0x00608610)) = 2;
+        //     VALUED(control_option + 0x2E24) = 1;
+        //     VALUED(control_option + 0x2E28) = 2;//keyboard
+        // }
+        *(DWORD*)(GetAddress(0x0060860C)) = 1;
+        *(DWORD*)(GetAddress(0x00608610)) = 2;
         VALUED(control_option + 0x2E24) = 1;
-        VALUED(control_option + 0x2E28) = 2;
+        VALUED(control_option + 0x2E28) = 2;//keyboard
     }
+   
 
     int v1; // ebx
     unsigned int v2; // esi
@@ -391,8 +477,14 @@ int __fastcall MyGetKeyState(DWORD thiz) {
             }
         }
         memset((void*)(thiz + 720), 0, 0x100u);
-        goto LABEL_96;
+        break;
     case 1:
+        if (g_connection.connect_state == Connected) {
+            break;
+        }
+        if (!IsOnWindow())
+            break;
+
         if ((*(int(__stdcall**)(DWORD))(**(DWORD**)(v1 + 8) + 100))(*(DWORD*)(v1 + 8)) < 0){
             v17 = 0;
             if ((*(int(__stdcall**)(DWORD))(**(DWORD**)(v1 + 8) + 28))(*(DWORD*)(v1 + 8)) == -2147024866){
@@ -458,30 +550,18 @@ int __fastcall MyGetKeyState(DWORD thiz) {
     LABEL_94:
         if (v2)
             *(DWORD*)(Address<DWORD>(GetAddress(0x5AE3A0)).GetValue() + 24) = *(DWORD*)v1;
-    LABEL_96:
-        *(DWORD*)(v1 + 20) = *(DWORD*)(v1 + 16);
-        *(DWORD*)(v1 + 16) = v2;
-
-        void(__fastcall * sub_402730)(unsigned int* thiz);
-        sub_402730 = (decltype(sub_402730))(GetAddress(0x402730));
-        sub_402730((unsigned int*)(v1 + 16));
-        if (Address<BYTE>(GetAddress(0x6078B8)).GetValue())
-        {
-            LeaveCriticalSection((LPCRITICAL_SECTION)GetAddress(0x607890));
-            Address<BYTE>(GetAddress(0x6078B7)).SetValue(Address<BYTE>(GetAddress(0x6078B7)).GetValue());
-        }
-        return v2;
+        break;
+    
     case 2:
         v30 = *(DWORD*)(v1 + 12);
         memset(&pState, 0, sizeof(pState));
-        if (XInputGetState(v30, &pState))
-            goto LABEL_96;
+        if (XInputGetState(v30, &pState)!=0)
+            break;
         if (g_connection.connect_state == Connected){
-                v2 = GetKeyStateFull(v1, v4);
-            goto LABEL_96;
+            break;
         }
         if (!IsOnWindow())
-            goto LABEL_96;
+            break;
         v6 = pState.Gamepad.wButtons;
         if (pState.Gamepad.bLeftTrigger >= 0x1Eu)
             v6 = pState.Gamepad.wButtons | 0x10000;
@@ -551,6 +631,19 @@ int __fastcall MyGetKeyState(DWORD thiz) {
             *(BYTE*)(v1 + 727) = 0x80;
         goto LABEL_94;
     default:
-        goto LABEL_96;
+        break;
     }
+
+    *(DWORD*)(v1 + 20) = *(DWORD*)(v1 + 16);
+    *(DWORD*)(v1 + 16) = v2;
+
+    void(__fastcall* sub_402730)(unsigned int* thiz);
+    sub_402730 = (decltype(sub_402730))(GetAddress(0x402730));
+    sub_402730((unsigned int*)(v1 + 16));
+    if (Address<BYTE>(GetAddress(0x6078B8)).GetValue())
+    {
+        LeaveCriticalSection((LPCRITICAL_SECTION)GetAddress(0x607890));
+        Address<BYTE>(GetAddress(0x6078B7)).SetValue(Address<BYTE>(GetAddress(0x6078B7)).GetValue());
+    }
+    return v2;
 }

@@ -30,6 +30,7 @@ extern int g_ui_frame;
 extern bool g_is_log;
 bool g_is_focus_ui;
 extern bool g_is_synced;
+extern bool g_force_keyboard;
 struct UI_State
 {
     struct {
@@ -134,6 +135,8 @@ void SetUI(IDirect3DDevice9* device)
     static bool adv_settings = false;
     ImGui::Checkbox("advanced settings", &adv_settings);
 
+    
+
     if (adv_settings)
     {
         ImGui::SetNextWindowSize(ImVec2(250.0f, 160.0f));
@@ -180,8 +183,9 @@ void SetUI(IDirect3DDevice9* device)
 
         ImGui::End();
     }
-
-    ImGui::TextColored(ImVec4(0.3f, 0.7f, 0.6f, 1.0f), "ver 1.05");
+    // ImGui::Checkbox("force keyboard", &g_force_keyboard);
+    // ImGui::SameLine();
+    ImGui::TextColored(ImVec4(0.3f, 0.7f, 0.6f, 1.0f), "ver 1.06");
     ImGui::End();
 
 

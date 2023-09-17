@@ -5,7 +5,7 @@
 #include <variant>
 #include <queue>
 #include "Key.h"
-#pragma comment(lib,"ws2_32.lib")
+
 
 
 
@@ -57,7 +57,6 @@ enum ConnectState
 
 struct P2PConnection
 {
-	static constexpr char const *  c_setting_file = ".\\p2vp_settings.ini";
 	static constexpr int c_max_time_retry_timeout = 32;
 	static constexpr int c_time_ms_retry_sync = 2000;
 
@@ -108,12 +107,10 @@ struct P2PConnection
 	int SendUDPPack(Data_StatePack data);
 	bool SetGuestSocketSetting();
 
-	void LoadSettings();
-	void SaveSettings();
+	
 };
 
 
 void ConnectLoop();
 void HandlePacks();
 void __stdcall ConnectLoop_L();
-

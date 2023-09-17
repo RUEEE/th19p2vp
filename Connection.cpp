@@ -641,51 +641,6 @@ int P2PConnection::SendUDPPack(Data_StatePack data)
 }
 
 
-void P2PConnection::LoadSettings()
-{
-	char buffer[256];
-	PushCurrentDirectory(L"%appdata%\\ShanghaiAlice\\th19");
-
-	GetPrivateProfileStringA("connect_setting", "addr_sendto", "", buffer, sizeof(buffer), c_setting_file);
-	memcpy(address_sendto, buffer, sizeof(buffer));
-	SetGuestSocketSetting();
-
-	GetPrivateProfileStringA("connect_setting", "delay", "3", buffer, sizeof(buffer), c_setting_file);
-	delay_compensation=s_atoi(buffer,3);
-
-	GetPrivateProfileStringA("connect_setting", "port_for_guest", "10801", buffer, sizeof(buffer), c_setting_file);
-	port_send_Guest = s_atoi(buffer, 10801);
-	if (port_send_Guest < 0 || port_send_Guest>65535)
-		port_send_Guest = 10801;
-
-	GetPrivateProfileStringA("connect_setting", "port_for_host", "10800", buffer, sizeof(buffer), c_setting_file);
-	port_listen_Host = s_atoi(buffer, 10800);
-	if (port_listen_Host < 0 || port_listen_Host>65535)
-		port_listen_Host = 10800;
-	PopCurrentDirectory();
-
-	SaveSettings();
-}
-
-void P2PConnection::SaveSettings()
-{
-	PushCurrentDirectory(L"%appdata%\\ShanghaiAlice\\th19");
-
-	WritePrivateProfileStringA("connect_setting", "addr_sendto", address_sendto, c_setting_file);
-
-	std::string buf="";
-	buf = std::format("{}", delay_compensation);
-	WritePrivateProfileStringA("connect_setting", "delay", buf.c_str(), c_setting_file);
-
-	buf = std::format("{}", port_send_Guest);
-	WritePrivateProfileStringA("connect_setting", "port_for_guest", buf.c_str(), c_setting_file);
-
-	buf = std::format("{}", port_listen_Host);
-	WritePrivateProfileStringA("connect_setting", "port_for_host", buf.c_str(), c_setting_file);
-
-	PopCurrentDirectory();
-}
-
 bool P2PConnection::SetGuestSocketSetting()
 {
 	is_addr_sendto_set = false;

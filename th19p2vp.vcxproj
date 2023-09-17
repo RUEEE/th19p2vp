@@ -65,7 +65,7 @@
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <EnableUAC>false</EnableUAC>
-      <AdditionalDependencies>dxerr.lib;dxguid.lib;d3dx9.lib;d3d9.lib;winmm.lib;xinput.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>dxerr.lib;dxguid.lib;d3dx9.lib;d3d9.lib;winmm.lib;xinput.lib;dinput8.lib;ws2_32.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -88,7 +88,7 @@
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <EnableUAC>false</EnableUAC>
-      <AdditionalDependencies>dxerr.lib;dxguid.lib;d3dx9.lib;d3d9.lib;xinput.lib;winmm.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>dxerr.lib;dxguid.lib;d3dx9.lib;d3d9.lib;xinput.lib;winmm.lib;dinput8.lib;ws2_32.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>

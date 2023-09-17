@@ -8,6 +8,9 @@
 void LogError(std::string msg);
 void LogInfo(std::string msg);
 
+void LoadSettings();
+void SaveSettings();
+
 int CalTimePeriod(LARGE_INTEGER start, LARGE_INTEGER end);
 void GetTime(LARGE_INTEGER* t);
 void InitUtils();
