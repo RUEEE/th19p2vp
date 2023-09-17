@@ -185,7 +185,7 @@ void SetUI(IDirect3DDevice9* device)
     }
     // ImGui::Checkbox("force keyboard", &g_force_keyboard);
     // ImGui::SameLine();
-    ImGui::TextColored(ImVec4(0.3f, 0.7f, 0.6f, 1.0f), "ver 1.06");
+    ImGui::TextColored(ImVec4(0.3f, 0.7f, 0.6f, 1.0f), "ver 1.06b");
     ImGui::End();
 
 

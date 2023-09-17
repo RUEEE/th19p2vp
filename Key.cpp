@@ -83,7 +83,7 @@ DWORD GetKeyStateGamePad_xinput_original(DWORD keyStruct, __int16* keyMapStruct,
         return 0;
     }
     *has_gp = true;
-    auto kst = state.Gamepad.wButtons;
+    DWORD kst = state.Gamepad.wButtons;
     if (state.Gamepad.bLeftTrigger >= 0x1Eu)
         kst = state.Gamepad.wButtons | 0x10000;
     if (state.Gamepad.bRightTrigger >= 0x1Eu)
@@ -392,17 +392,6 @@ int __fastcall MyGetKeyState(DWORD thiz) {
 
     DWORD control_option = VALUED(GetAddress(0x005AE3A0));
     if (g_connection.connect_state==Connected && control_option){
-        // if(!g_force_keyboard && (thiz + 8) && *(DWORD**)(thiz + 8) && (*(int(__stdcall**)(DWORD))(**(DWORD**)(thiz + 8) + 0x1C))(*(DWORD*)(thiz + 8)) >= 0){
-        //     *(DWORD*)(GetAddress(0x0060860C)) = 3;
-        //     *(DWORD*)(GetAddress(0x00608610)) = 4;
-        //     VALUED(control_option + 0x2E24) = 3;
-        //     VALUED(control_option + 0x2E28) = 4;//enable gamepad
-        // }else {
-        //     *(DWORD*)(GetAddress(0x0060860C)) = 1;
-        //     *(DWORD*)(GetAddress(0x00608610)) = 2;
-        //     VALUED(control_option + 0x2E24) = 1;
-        //     VALUED(control_option + 0x2E28) = 2;//keyboard
-        // }
         *(DWORD*)(GetAddress(0x0060860C)) = 1;
         *(DWORD*)(GetAddress(0x00608610)) = 2;
         VALUED(control_option + 0x2E24) = 1;
@@ -481,6 +470,8 @@ int __fastcall MyGetKeyState(DWORD thiz) {
     case 1:
         if (g_connection.connect_state == Connected) {
             break;
+        }else if (g_connection.connect_state != No_Connection) {
+            break;
         }
         if (!IsOnWindow())
             break;
@@ -553,15 +544,20 @@ int __fastcall MyGetKeyState(DWORD thiz) {
         break;
     
     case 2:
+        if (g_connection.connect_state == Connected) {
+            break;
+        }else if (g_connection.connect_state != No_Connection){
+            break;
+        }
         v30 = *(DWORD*)(v1 + 12);
         memset(&pState, 0, sizeof(pState));
         if (XInputGetState(v30, &pState)!=0)
             break;
-        if (g_connection.connect_state == Connected){
-            break;
-        }
         if (!IsOnWindow())
             break;
+        bool has_gp;
+        v2=GetKeyStateGamePad_xinput_original(v1, v4, &pState, &has_gp);
+        /*
         v6 = pState.Gamepad.wButtons;
         if (pState.Gamepad.bLeftTrigger >= 0x1Eu)
             v6 = pState.Gamepad.wButtons | 0x10000;
@@ -601,10 +597,13 @@ int __fastcall MyGetKeyState(DWORD thiz) {
             v14 = v6 & dword_5743E8[v4[13]];
         }
         v2 = v13 | 0x100;
+        
         v15 = v14 == 0;
         v16 = pState.Gamepad.wButtons;
         if (v15)
             v2 = v13;
+            */
+        v16 = pState.Gamepad.wButtons;
         if ((pState.Gamepad.wButtons & 0x1000) != 0)
             *(BYTE*)(v1 + 720) = 0x80;
         if ((v16 & 0x2000) != 0)
