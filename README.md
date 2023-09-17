@@ -93,6 +93,10 @@ Click show cmd will show the cmd console (it may cause lag when logging)
 
 ## Updates
 
+1.06b(23/09/18)
+
+* gamepad bug fix
+
 1.06(23/09/16)
 
 * try to support gamepad(might exist bug)
